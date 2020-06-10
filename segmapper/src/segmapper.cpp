@@ -179,8 +179,8 @@ void SegMapper::segMatchThread() {
     track_id = (track_id + 1u) % laser_slam_workers_.size();
 
     // Get the queued points.
-    auto new_points = laser_slam_workers_[track_id]->getQueuedPoints();
-    if (new_points.empty()) {
+    auto new_points_and_views = laser_slam_workers_[track_id]->getQueuedPoints();
+    if (new_points_and_views.first.empty()) {
       BENCHMARK_STOP_AND_IGNORE("SM");
       ++skipped_tracks_count;
       // Keep asking for publishing to increase the publishing counter.
@@ -197,7 +197,9 @@ void SegMapper::segMatchThread() {
     Pose current_pose = incremental_estimator_->getCurrentPose(track_id);
     {
       std::lock_guard<std::mutex> map_lock(local_maps_mutexes_[track_id]);
-      local_maps_[track_id].updatePoseAndAddPoints(new_points, current_pose);
+      local_maps_[track_id].updatePoseAndAddPoints(new_points_and_views.first,
+                                                   new_points_and_views.second,
+                                                   current_pose);
     }
 
     // Process the source cloud.

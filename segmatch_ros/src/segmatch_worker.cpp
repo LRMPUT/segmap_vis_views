@@ -426,7 +426,7 @@ bool SegMatchWorker::exportRunServiceCall(std_srvs::Empty::Request& req,
 
   if (params_.export_segments_and_matches) {
     // TODO RD clean if not needed.
-    //database::exportMatches("/tmp/online_matcher/run_" + acquisition_time + "_matches.csv",
+    // database::exportMatches("/tmp/online_matcher/run_" + acquisition_time + "_matches.csv",
     //                        matches_database_);
     database::exportSegmentsAndFeatures("/tmp/online_matcher/run_" + acquisition_time,
                                         segments_database_, true);

@@ -137,6 +137,8 @@ void SegmentedCloud::calculateSegmentCentroids() {
 void SegmentedCloud::clear() {
   //TODO(Daniel): fill this function
   valid_segments_.clear();
+
+  vis_views_.clear();
 }
 
 PointCloud SegmentedCloud::centroidsAsPointCloud(

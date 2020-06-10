@@ -11,9 +11,12 @@ from sklearn import metrics
 import ensure_segmappy_is_installed
 from segmappy import Dataset
 from segmappy.tools.hull import point_in_hull, n_points_in_hull, are_in_hull
+from segmappy.core.config import get_default_dataset_dir
 
-DATASET_FOLDER = "with_merge_events/drive18"
-FILE_PATH = DATASET_FOLDER + "/matches_database.csv"
+
+
+DATASET_FOLDER = "Riverside01"
+FILE_PATH = os.path.join(get_default_dataset_dir(), DATASET_FOLDER + "/matches_database.csv")
 if os.path.isfile(FILE_PATH):
     os.remove(FILE_PATH)
 
@@ -78,6 +81,8 @@ CENTROID_DISTANCE_THRESHOLD = 3.0
 SUBSAMPLING_RATE = 5
 HULL_VOLUME_THRESHOLD = 0.33
 N_ID_TO_SKIP = 100
+# PLOT_3D = True
+# PLOT_MAP = False
 PLOT_3D = False
 PLOT_MAP = True
 
@@ -98,6 +103,7 @@ for i in range(n_unique_ids):
             np.linalg.norm(unique_centroids[i] - unique_centroids[j])
             <= CENTROID_DISTANCE_THRESHOLD
         ):
+            # print('Close centroids for j = ', j)
 
             segment2 = unique_segments[j]
             hull2 = hulls[j]
@@ -128,6 +134,9 @@ for i in range(n_unique_ids):
             volume_ratio_1 = intersection_hull.volume / hull1.volume
             volume_ratio_2 = intersection_hull.volume / hull2.volume
 
+            # print("Source volume ratio: ", volume_ratio_1)
+            # print("Target volume ratio: ", volume_ratio_2)
+
             if (
                 volume_ratio_1 > HULL_VOLUME_THRESHOLD
                 and volume_ratio_2 > HULL_VOLUME_THRESHOLD
@@ -136,38 +145,38 @@ for i in range(n_unique_ids):
                 matches.append([unique_ids[i], unique_ids[j]])
 
                 if PLOT_3D:
-                    x_min = min(source_segment[:, 0].min(), target_segment[:, 0].min())
-                    x_max = max(source_segment[:, 0].max(), target_segment[:, 0].max())
-                    y_min = min(source_segment[:, 1].min(), target_segment[:, 1].min())
-                    y_max = max(source_segment[:, 1].max(), target_segment[:, 1].max())
-                    z_min = min(source_segment[:, 2].min(), target_segment[:, 2].min())
-                    z_max = max(source_segment[:, 2].max(), target_segment[:, 2].max())
+                    x_min = min(segment1[:, 0].min(), segment2[:, 0].min())
+                    x_max = max(segment1[:, 0].max(), segment2[:, 0].max())
+                    y_min = min(segment1[:, 1].min(), segment2[:, 1].min())
+                    y_max = max(segment1[:, 1].max(), segment2[:, 1].max())
+                    z_min = min(segment1[:, 2].min(), segment2[:, 2].min())
+                    z_max = max(segment1[:, 2].max(), segment2[:, 2].max())
 
-                    print("Source volume ratio: ", source_volume_ratio)
-                    print("Target volume ratio: ", target_volume_ratio)
+                    print("Source volume ratio: ", volume_ratio_1)
+                    print("Target volume ratio: ", volume_ratio_2)
 
                     fig = plt.figure(1)
                     ax = fig.add_subplot(1, 2, 1, projection="3d")
-                    ins, outs = are_in_hull(target_segment, source_hull)
+                    ins, outs = are_in_hull(segment2, hull1)
                     ax.scatter(
-                        target_segment[ins, 0],
-                        target_segment[ins, 1],
-                        target_segment[ins, 2],
+                        segment2[ins, 0],
+                        segment2[ins, 1],
+                        segment2[ins, 2],
                         color="blue",
                         marker=".",
                     )
                     ax.scatter(
-                        target_segment[outs, 0],
-                        target_segment[outs, 1],
-                        target_segment[outs, 2],
+                        segment2[outs, 0],
+                        segment2[outs, 1],
+                        segment2[outs, 2],
                         color="red",
                         marker=".",
                     )
-                    for simplex in target_hulls[i].simplices:
+                    for simplex in hull2.simplices:
                         plt.plot(
-                            target_segment[simplex, 0],
-                            target_segment[simplex, 1],
-                            target_segment[simplex, 2],
+                            segment2[simplex, 0],
+                            segment2[simplex, 1],
+                            segment2[simplex, 2],
                             "k-",
                         )
                     ax.set_xlim(x_min, x_max)
@@ -176,13 +185,13 @@ for i in range(n_unique_ids):
 
                     ax = fig.add_subplot(1, 2, 2, projection="3d")
                     ax.scatter(
-                        source_segment[:, 0], source_segment[:, 1], source_segment[:, 2]
+                        segment1[:, 0], segment1[:, 1], segment1[:, 2]
                     )
-                    for simplex in source_hull.simplices:
+                    for simplex in hull1.simplices:
                         plt.plot(
-                            source_segment[simplex, 0],
-                            source_segment[simplex, 1],
-                            source_segment[simplex, 2],
+                            segment1[simplex, 0],
+                            segment1[simplex, 1],
+                            segment1[simplex, 2],
                             "k-",
                         )
                     ax.set_xlim(x_min, x_max)
@@ -197,7 +206,7 @@ for i in range(n_unique_ids):
                     ax = fig.add_subplot(1, 2, 1)
                     plt.plot(segment1[:, 0], segment1[:, 1], "o")
                     # for simplex in target_hulls[i].simplices:
-                    #    plt.plot(target_segment[simplex, 0], target_segment[simplex, 1], 'k-')
+                    #    plt.plot(segment2[simplex, 0], segment2[simplex, 1], 'k-')
 
                     ax = fig.add_subplot(1, 2, 2)
                     plt.plot(segment2[:, 0], segment2[:, 1], "o")

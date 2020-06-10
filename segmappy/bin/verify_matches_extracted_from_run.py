@@ -11,10 +11,10 @@ from sklearn import metrics
 import ensure_segmappy_is_installed
 from segmappy import Dataset
 
-DATASET_FOLDER = "for_generating_matches/drive18"
+DATASET_FOLDER = "DCC01"
 
 dataset = Dataset(folder=DATASET_FOLDER, use_matches=False, normalize_classes=False)
-segments, _, ids, n_ids, features, matches = dataset.load()
+segments, _, ids, n_ids, features, matches, _ = dataset.load()
 
 
 # Find the convex hulls of the last view of each segment.

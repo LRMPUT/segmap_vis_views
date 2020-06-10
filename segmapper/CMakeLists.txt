@@ -3,6 +3,8 @@ project(segmapper)
 
 add_definitions(-std=c++11 -DBENCHMARK_ENABLE)
 
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 find_package(catkin_simple 0.1.0 REQUIRED)
 
 catkin_simple(ALL_DEPS_REQUIRED)
@@ -12,7 +14,8 @@ cs_add_library(${PROJECT_NAME}
 )
 
 cs_add_executable(segmapper_node src/segmapper_node.cpp)
-target_link_libraries(segmapper_node ${PROJECT_NAME})
+target_link_libraries(segmapper_node /home/janw/anaconda3/envs/tf_gpu_python2/lib/libfreetype.so.6 fontconfig harfbuzz ${PROJECT_NAME})
+#target_link_libraries(segmapper_node ${PROJECT_NAME})
 
 cs_install()
 cs_export()

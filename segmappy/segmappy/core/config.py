@@ -2,9 +2,10 @@ import configparser
 import os
 
 def get_segmap_home_dir():
-    segmap_home = os.path.abspath(
-        os.path.join(os.path.expanduser("~"), ".segmap/")
-    )
+    # segmap_home = os.path.abspath(
+    #     os.path.join(os.path.expanduser("~"), ".segmap/")
+    # )
+    segmap_home = '/mnt/data/datasets/JW/MulRan/segmap'
 
     # If home directory doesn't exist create
     if not os.path.isdir(segmap_home):

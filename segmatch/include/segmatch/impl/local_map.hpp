@@ -45,7 +45,9 @@ LocalMap<InputPointT, ClusteredPointT>::LocalMap(
 
 template<typename InputPointT, typename ClusteredPointT>
 void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
-    const std::vector<InputCloud>& new_clouds, const laser_slam::Pose& pose) {
+    const std::vector<InputCloud>& new_clouds,
+    const std::vector<laser_slam_ros::VisualView>& new_views,
+    const laser_slam::Pose& pose) {
   BENCHMARK_BLOCK("SM.UpdateLocalMap");
 
   std::vector<bool> is_point_removed = updatePose(pose);
@@ -65,6 +67,8 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
   } else {
     is_normal_modified_since_last_update_ = std::vector<bool>(getFilteredPoints().size(), false);
   }
+
+  vis_views.insert(vis_views.end(), new_views.begin(), new_views.end());
 }
 
 template<typename InputPointT, typename ClusteredPointT>

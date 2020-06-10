@@ -2,6 +2,7 @@
 #define SEGMATCH_LOCAL_MAP_HPP_
 
 #include <laser_slam/common.hpp>
+#include <laser_slam_ros/visual_view.hpp>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/io.h>
 #include <pcl/point_cloud.h>
@@ -62,6 +63,7 @@ class LocalMap {
   /// \param new_clouds Vector of point clouds to be added.
   /// \param pose The new pose of the robot.
   void updatePoseAndAddPoints(const std::vector<InputCloud>& new_clouds,
+                              const std::vector<laser_slam_ros::VisualView>& new_views,
                               const laser_slam::Pose& pose);
 
   /// \brief Apply a pose transformation to the points contained in the local map.
@@ -120,6 +122,10 @@ class LocalMap {
     return is_normal_modified_since_last_update_;
   }
 
+  std::vector<laser_slam_ros::VisualView> getVisViews() {
+      return vis_views;
+  }
+
  private:
   std::vector<bool> updatePose(const laser_slam::Pose& pose);
   std::vector<int> addPointsAndGetCreatedVoxels(const std::vector<InputCloud>& new_clouds);
@@ -139,6 +145,8 @@ class LocalMap {
   // Variables needed for working with incremental updates.
   std::vector<Id> segment_ids_;
   std::vector<bool> is_normal_modified_since_last_update_;
+
+  std::vector<laser_slam_ros::VisualView> vis_views;
 }; // class LocalMap
 
 } // namespace segmatch

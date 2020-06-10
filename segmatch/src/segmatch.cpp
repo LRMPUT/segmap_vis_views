@@ -87,6 +87,8 @@ void SegMatch::processAndSetAsSourceCloud(
                                                  merge_event.second));
   }
 
+  segmented_source_clouds_[track_id].addVisViews(local_map.getVisViews());
+
   segmented_source_clouds_[track_id].setTimeStampOfSegments(latest_pose.time_ns);
   segmented_source_clouds_[track_id].setLinkPoseOfSegments(latest_pose.T_w);
   segmented_source_clouds_[track_id].setTrackId(track_id);
@@ -115,7 +117,7 @@ void SegMatch::transferSourceToTarget(unsigned int track_id,
   filterNearestSegmentsInCloud(segmented_target_cloud_, params_.centroid_distance_threshold_m,
                                5u);
 
-  classifier_->setTarget(segmented_target_cloud_);
+  // classifier_->setTarget(segmented_target_cloud_);
 }
 
 void SegMatch::processCloud(MapCloud& cloud,

@@ -8,6 +8,7 @@
 
 #include <glog/logging.h>
 #include <laser_slam/common.hpp>
+#include <laser_slam_ros/visual_view.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -193,10 +194,20 @@ class SegmentedCloud {
   // TODO RD Solve the need for cleaning empty segments.
   void cleanEmptySegments();
 
+  void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views) {
+      vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
+  }
+
+  std::vector<laser_slam_ros::VisualView> getVisViews() const {
+      return vis_views_;
+  }
+
  private:
   std::unordered_map<Id, Segment> valid_segments_;
   static Id current_id_;
   bool keep_only_last_view_;
+
+  std::vector<laser_slam_ros::VisualView> vis_views_;
 
   // Create a new view when the number of points increased by this ratio.
   // Currently only used for exporting the run data.
