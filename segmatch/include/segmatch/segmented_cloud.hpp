@@ -195,11 +195,44 @@ class SegmentedCloud {
   void cleanEmptySegments();
 
   void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views) {
-      vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
+    // LOG(INFO) << "Adding new views";
+
+    if(!valid_segments_.empty()) {
+      const auto &position = valid_segments_.begin()->second.getLastView().T_w_linkpose.getPosition();
+
+      std::vector<laser_slam_ros::VisualView> valid_vis_views;
+      for (const auto &view : vis_views_) {
+        const double &x = view.getPose().T_w.getPosition()[0];
+        const double &y = view.getPose().T_w.getPosition()[1];
+        const double &z = view.getPose().T_w.getPosition()[2];
+        double dx = x - position[0];
+        double dy = y - position[1];
+        double dz = z - position[2];
+        if (dx * dx + dy * dy < 50*50 && -999.0 <= dz && dz <= 999.0) {
+          valid_vis_views.push_back(view);
+        }
+      }
+      vis_views_.swap(valid_vis_views);
+    }
+
+    curves::Time last_time_ns(0);
+    if(!vis_views_.empty()){
+      last_time_ns = vis_views_.back().getTime();
+    }
+    for(const auto &view : new_views) {
+      // it is a new view
+      if(last_time_ns < view.getTime()) {
+        // LOG(INFO) << "Adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
+        vis_views_.push_back(view);
+      }
+      // else {
+      //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
+      // }
+    }
   }
 
   std::vector<laser_slam_ros::VisualView> getVisViews() const {
-      return vis_views_;
+    return vis_views_;
   }
 
  private:

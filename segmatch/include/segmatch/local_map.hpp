@@ -123,7 +123,7 @@ class LocalMap {
   }
 
   std::vector<laser_slam_ros::VisualView> getVisViews() {
-      return vis_views;
+      return vis_views_;
   }
 
  private:
@@ -146,7 +146,7 @@ class LocalMap {
   std::vector<Id> segment_ids_;
   std::vector<bool> is_normal_modified_since_last_update_;
 
-  std::vector<laser_slam_ros::VisualView> vis_views;
+  std::vector<laser_slam_ros::VisualView> vis_views_;
 }; // class LocalMap
 
 } // namespace segmatch

@@ -68,7 +68,7 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
     is_normal_modified_since_last_update_ = std::vector<bool>(getFilteredPoints().size(), false);
   }
 
-  vis_views.insert(vis_views.end(), new_views.begin(), new_views.end());
+  vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
 }
 
 template<typename InputPointT, typename ClusteredPointT>
@@ -94,6 +94,20 @@ std::vector<bool> LocalMap<InputPointT, ClusteredPointT>::updatePose(const laser
       segment_ids_[p.sc_cluster_id] = kInvId;
     return remove;
   });
+
+  std::vector<laser_slam_ros::VisualView> valid_vis_views;
+  for(const auto &view : vis_views_){
+    const double &x = view.getPose().T_w.getPosition()[0];
+    const double &y = view.getPose().T_w.getPosition()[1];
+    const double &z = view.getPose().T_w.getPosition()[2];
+    double dx = x - position.x;
+    double dy = y - position.y;
+    double dz = z - position.z;
+    if(dx*dx + dy*dy < radius_squared_m2_ && min_vertical_distance_m_ <= dz && dz <= max_vertical_distance_m_) {
+      valid_vis_views.push_back(view);
+    }
+  }
+  vis_views_.swap(valid_vis_views);
 
   return is_point_removed;
 }
