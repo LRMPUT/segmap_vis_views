@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(segmatch)
 
+# OpenCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS} )
+
 find_package(catkin_simple 0.1.0 REQUIRED)
 catkin_simple()
 
@@ -34,7 +38,7 @@ cs_add_library(${PROJECT_NAME}
   src/segmenters/segmenter_factory.cpp
   src/segmenters/smoothness_constraints_segmenter.cpp
 )
-target_link_libraries(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 
 find_package(Boost REQUIRED COMPONENTS system thread)
 
@@ -51,7 +55,7 @@ catkin_add_gtest(${PROJECT_NAME}_tests
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
 )
 
-target_link_libraries(${PROJECT_NAME}_tests ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_tests ${PROJECT_NAME} ${OpenCV_LIBS})
 
 add_doxygen(REQUIRED)
 

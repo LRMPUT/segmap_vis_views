@@ -18,6 +18,7 @@ class Dataset(object):
         require_relevance=0.0,
         require_diff_points=0,
         normalize_classes=True,
+        use_visual=False,
     ):
         abs_folder = os.path.abspath(os.path.join(base_dir, folder))
         try:
@@ -34,10 +35,11 @@ class Dataset(object):
         self.require_relevance = require_relevance
         self.require_diff_points = require_diff_points
         self.normalize_classes = normalize_classes
+        self.use_visual = use_visual
 
     # load the segment dataset
     def load(self, preprocessor=None):
-        from ..tools.import_export import load_segments, load_positions, load_features
+        from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views
 
         # load all the csv files
         self.segments, sids, duplicate_sids = load_segments(folder=self.folder)
@@ -45,6 +47,14 @@ class Dataset(object):
         self.features, self.feature_names, fids, duplicate_fids = load_features(
             folder=self.folder
         )
+        self.int_paths, self.mask_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
+
+        complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
+        vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
+        self.int_paths = [self.int_paths[idx] for idx in vorder]
+        self.mask_paths = [self.mask_paths[idx] for idx in vorder]
+        vids = [vids[idx] for idx in vorder]
+        duplicate_vids = [duplicate_vids[idx] for idx in vorder]
 
         self.classes = np.array(sids)
         self.duplicate_classes = self.classes.copy()

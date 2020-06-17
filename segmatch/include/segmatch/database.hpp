@@ -58,6 +58,9 @@ bool exportSegments(const std::string& filename,
                     const SegmentedCloud& segmented_cloud,
                     bool export_all_views = false,
                     bool export_reconstructions = false);
+bool exportVisualViews(const std::string& dir,
+                      const SegmentedCloud& segmented_cloud,
+                       bool export_all_views = false);
 bool exportPositions(const std::string& filename,
                      const SegmentedCloud& segmented_cloud,
                      bool export_all_views = false);

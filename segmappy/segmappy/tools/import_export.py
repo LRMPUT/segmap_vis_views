@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import numpy as np
 import os
+import fnmatch
+import re
 
 database_folder = "./database/"
 
@@ -190,6 +192,40 @@ def load_trajectory(filename):
     trajectory = read_csv(filename, delimiter=",").values
     print("  Loaded " + str(trajectory.shape[0]) + " trajectory poses.")
     return trajectory
+
+
+def load_vis_views(folder=database_folder, dir="vis_views_database"):
+
+    dir_path = os.path.join(folder, dir)
+    int_filenames = fnmatch.filter(sorted(os.listdir(dir_path)), 'int_*.png')
+    int_paths = [os.path.join(dir_path, filename) for filename in int_filenames]
+    mask_filenames = fnmatch.filter(sorted(os.listdir(dir_path)), 'mask_*.png')
+    mask_paths = [os.path.join(dir_path, filename) for filename in mask_filenames]
+    segments_ids = [int(re.split('[_.]', filename)[1]) for filename in int_filenames]
+    duplicate_ids = [int(re.split('[_.]', filename)[2]) for filename in int_filenames]
+    segments_ids_mask = [int(re.split('[_.]', filename)[1]) for filename in mask_filenames]
+    duplicate_ids_mask = [int(re.split('[_.]', filename)[2]) for filename in mask_filenames]
+
+    if len(segments_ids) != len(segments_ids_mask):
+        raise ValueError(
+            "Different number of intensity and mask images"
+        )
+
+    if len([id_int for id_int, d_id, id_mask, d_id_mask in zip(segments_ids,
+                                                               duplicate_ids,
+                                                               segments_ids_mask,
+                                                               duplicate_ids_mask) if
+            id_int != id_mask or d_id != d_id_mask]) > 0:
+        raise ValueError(
+            "Different segment ids in intensity and mask"
+        )
+
+    print(
+        "  Found "
+        + str(len(int_paths))
+        + " visual views"
+    )
+    return int_paths, mask_paths, segments_ids, duplicate_ids
 
 
 def write_features(

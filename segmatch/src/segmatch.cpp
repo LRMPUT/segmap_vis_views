@@ -87,6 +87,7 @@ void SegMatch::processAndSetAsSourceCloud(
                                                  merge_event.second));
   }
 
+  segmented_source_clouds_[track_id].clearFarVisViews();
   segmented_source_clouds_[track_id].addVisViews(local_map.getVisViews());
 
   segmented_source_clouds_[track_id].setTimeStampOfSegments(latest_pose.time_ns);

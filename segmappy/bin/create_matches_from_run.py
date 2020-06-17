@@ -15,7 +15,7 @@ from segmappy.core.config import get_default_dataset_dir
 
 
 
-DATASET_FOLDER = "Riverside01"
+DATASET_FOLDER = "DCC01"
 FILE_PATH = os.path.join(get_default_dataset_dir(), DATASET_FOLDER + "/matches_database.csv")
 if os.path.isfile(FILE_PATH):
     os.remove(FILE_PATH)

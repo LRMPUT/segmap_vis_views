@@ -1,11 +1,17 @@
 #include "segmatch/database.hpp"
 
 #include <fstream>
+#include <iostream>
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 
+#include <opencv2/opencv.hpp>
+
 #include "segmatch/utilities.hpp"
+
+using std::cout;
+using std::endl;
 
 namespace segmatch {
 namespace database {
@@ -153,10 +159,12 @@ bool exportSegments(const std::string& filename, const SegmentedCloud& segmented
   ensureDirectoryExistsForFilename(filename);
   std::ofstream output_file;
   output_file.open(filename, std::ofstream::out | std::ofstream::trunc);
+
   if (output_file.is_open()) {
     for (std::unordered_map<Id, Segment>::const_iterator it = segmented_cloud.begin();
         it != segmented_cloud.end(); ++it) {
       Segment segment = it->second;
+
       if (export_all_views) {
         for (size_t i = 0u; i < segment.views.size(); ++i) {
           PointCloud point_cloud;
@@ -197,6 +205,101 @@ bool exportSegments(const std::string& filename, const SegmentedCloud& segmented
     LOG(ERROR) << "Could not open file " << filename << " for writing segments.";
     return false;
   }
+}
+
+bool exportView(const std::string &dir,
+                const long int &segment_id,
+                const int &view_idx,
+                const SegmentView &segment_view,
+                const laser_slam_ros::VisualView &vis_view)
+{
+  const laser_slam_ros::VisualView::Matrix &intensity = vis_view.getIntensity();
+  const laser_slam_ros::VisualView::MatrixInt &mask = vis_view.getMask(segment_view.point_cloud);
+
+  cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
+  cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
+  for (int r = 0; r < intensity.rows(); ++r) {
+    for (int c = 0; c < intensity.cols(); ++c) {
+      intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+    }
+  }
+  for (int r = 0; r < mask.rows(); ++r) {
+    for (int c = 0; c < mask.cols(); ++c) {
+      if (mask(r, c) > 0) {
+        maskMat.at<uint8_t>(r, c) = 255;
+      } else {
+        maskMat.at<uint8_t>(r, c) = 0;
+      }
+    }
+  }
+
+  // cout << "intensity.maxCoeff() = " << intensity.maxCoeff() << endl;
+
+  // cv::imshow("intensity", intensityMat);
+  // cv::imshow("mask", maskMat);
+
+  char filename[100];
+  sprintf(filename, "%06ld_%03d.png", segment_id, view_idx);
+  cv::imwrite((boost::filesystem::path(dir) / (std::string("int_") + filename)).string(), intensityMat);
+  cv::imwrite((boost::filesystem::path(dir) / (std::string("mask_") + filename)).string(), maskMat);
+}
+
+bool exportVisualViews(const std::string& dir,
+                       const SegmentedCloud& segmented_cloud,
+                       bool export_all_views)
+{
+  ensureDirectoryExists(dir);
+
+  const std::vector<laser_slam_ros::VisualView> vis_views = segmented_cloud.getVisViews();
+
+  for (std::unordered_map<Id, Segment>::const_iterator it = segmented_cloud.begin();
+       it != segmented_cloud.end(); ++it) {
+    const Segment &segment = it->second;
+
+    if (export_all_views) {
+      for (size_t i = 0u; i < segment.views.size(); ++i) {
+        int vis_view_idx = -1;
+        for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
+          // cout << vis_views[i].getTime() << endl;
+          // there should be always visual view for the view
+          if (vis_views[vis_i].getTime() == segment.views[i].timestamp_ns) {
+            vis_view_idx = vis_i;
+            break;
+          }
+        }
+        CHECK_GE(vis_view_idx, 0);
+
+        exportView(dir, segment.segment_id, i, segment.views[i], vis_views[vis_view_idx]);
+      }
+    }
+    else {
+      std::vector<laser_slam::Time> timestamps;
+      for (size_t i = 0u; i < segment.views.size(); ++i) {
+        timestamps.push_back(segment.views[i].timestamp_ns);
+        // cout << timestamps.back() << endl;
+      }
+      std::sort(timestamps.begin(), timestamps.end());
+      if (!timestamps.empty()) {
+        laser_slam::Time view_ts = timestamps[timestamps.size() / 2];
+
+        // cout << "Visual views timestamps:" << endl;
+        int vis_view_idx = -1;
+        for (int i = 0; i < vis_views.size(); ++i) {
+          // cout << vis_views[i].getTime() << endl;
+          // there should be always visual view for the view
+          if (vis_views[i].getTime() == view_ts) {
+            vis_view_idx = i;
+            break;
+          }
+        }
+        CHECK_GE(vis_view_idx, 0);
+
+        exportView(dir, segment.segment_id, segment.views.size() - 1, segment.getLastView(), vis_views[vis_view_idx]);
+      }
+    }
+  }
+  LOG(INFO) << segmented_cloud.getNumberOfValidSegments() << " views written to " << dir;
+  return true;
 }
 
 bool exportPositions(const std::string& filename, const SegmentedCloud& segmented_cloud,
@@ -333,6 +436,7 @@ bool exportSegmentsAndFeatures(const std::string& filename_prefix,
                                const SegmentedCloud& segmented_cloud,
                                const bool export_all_views) {
   exportSegments(filename_prefix + "_segments.csv", segmented_cloud, export_all_views);
+  exportVisualViews(filename_prefix + "_vis_views", segmented_cloud, export_all_views);
   exportFeatures(filename_prefix + "_features.csv", segmented_cloud, export_all_views);
   exportSegmentsTimestamps(filename_prefix + "_timestamps.csv", segmented_cloud, export_all_views);
 }
