@@ -21,7 +21,7 @@ if os.path.isfile(FILE_PATH):
     os.remove(FILE_PATH)
 
 dataset = Dataset(folder=DATASET_FOLDER, use_matches=False, normalize_classes=False)
-segments, _, ids, n_ids, features, matches, labels_dict = dataset.load()
+segments, _, ids, n_ids, features, matches, labels_dict, _, _ = dataset.load()
 
 filtered_segments = []
 filtered_ids = []

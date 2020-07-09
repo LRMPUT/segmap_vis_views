@@ -119,6 +119,8 @@ class Dataset(object):
             self.features,
             self.matches,
             self.labels_dict,
+            self.int_paths,
+            self.mask_paths
         )
 
     def _remove_unchanged(self):
@@ -337,6 +339,10 @@ class Dataset(object):
             self.positions = self.positions[ordered_ids]
         if self.features.size > 0:
             self.features = self.features[ordered_ids]
+        if len(self.int_paths) > 0:
+            self.int_paths = [self.int_paths[i] for i in ordered_ids]
+        if len(self.mask_paths) > 0:
+            self.mask_paths = [self.mask_paths[i] for i in ordered_ids]
 
         self.duplicate_ids = self.duplicate_ids[ordered_ids]
         self.duplicate_classes = self.duplicate_classes[ordered_ids]
@@ -350,6 +356,10 @@ class Dataset(object):
             self.positions = self.positions[keep]
         if self.features.size > 0:
             self.features = self.features[keep]
+        if len(self.int_paths) > 0:
+            self.int_paths = [int_path for (k, int_path) in zip(keep, self.int_paths) if k]
+        if len(self.mask_paths) > 0:
+            self.mask_paths = [mask_path for (k, mask_path) in zip(keep, self.mask_paths) if k]
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]

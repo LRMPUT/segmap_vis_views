@@ -1,6 +1,6 @@
 from __future__ import print_function
 import numpy as np
-
+import cv2
 
 class Preprocessor(object):
     def __init__(
@@ -47,11 +47,13 @@ class Preprocessor(object):
         self.last_scales = []
 
     def init_segments(
-        self, segments, classes, positions=None, train_ids=None, scaler_path=None
+        self, segments, classes, positions=None, train_ids=None, scaler_path=None, int_paths=None, mask_paths=None
     ):
 
         self.segments = segments
         self.classes = np.array(classes)
+        self.int_paths = int_paths
+        self.mask_paths = mask_paths
 
         if self.align == "robot":
             assert positions is not None
@@ -67,13 +69,20 @@ class Preprocessor(object):
 
     def get_processed(self, segment_ids, train=True, normalize=True):
         batch_segments = []
+        batch_vis_views = []
         for i in segment_ids:
             batch_segments.append(self.segments[i])
+            cur_int = cv2.imread(self.int_paths[i], cv2.IMREAD_ANYDEPTH)
+            cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH)
+            batch_vis_views.append(np.stack([cur_int, cur_mask], axis=-1))
+
+        batch_vis_views = np.array(batch_vis_views)
 
         batch_segments = self.process(batch_segments, train, normalize)
+        batch_vis_views = self.process_vis_views(batch_vis_views, train, normalize)
         batch_classes = self.classes[segment_ids]
 
-        return batch_segments, batch_classes
+        return batch_segments, batch_classes, batch_vis_views
 
     def process(self, segments, train=True, normalize=True):
         # augment through distorsions
@@ -107,6 +116,11 @@ class Preprocessor(object):
                 segments = self._normalize_voxel_matrix(segments)
 
         return segments
+
+    def process_vis_views(self, vis_views, train=True, normalize=True):
+        if train:
+            vis_views = self._augment_rotation_vis(vis_views)
+        return vis_views
 
     def get_n_batches(self, train=True):
         if train:
@@ -258,6 +272,13 @@ class Preprocessor(object):
             jitter_segments.append(segment)
 
         return jitter_segments
+
+    def _augment_rotation_vis(self, vis_view):
+        # rotate around vertical axis - shift image width (dimension 2)
+        rot = np.random.randint(0, vis_view.shape[2])
+        vis_view_rot = np.concatenate([vis_view[:, :, rot:, :], vis_view[:, :, :rot, :]], axis=2)
+
+        return vis_view_rot
 
     def _rescale_coordinates(self, segments):
         # center corner to origin

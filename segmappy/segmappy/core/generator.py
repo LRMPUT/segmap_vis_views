@@ -39,14 +39,14 @@ class Generator(object):
         if self._i >= self.n_segments:
             self._i = 0
 
-        batch_segments, batch_classes = self.preprocessor.get_processed(
+        batch_segments, batch_classes, batch_vis_views = self.preprocessor.get_processed(
             self.batch_ids, train=self.train
         )
 
         batch_segments = batch_segments[:, :, :, :, None]
         batch_classes = to_onehot(batch_classes, self.n_classes)
 
-        return batch_segments, batch_classes
+        return batch_segments, batch_classes, batch_vis_views
 
 
 class GeneratorFeatures(object):

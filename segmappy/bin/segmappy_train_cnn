@@ -54,12 +54,14 @@ n_classes = 0
 duplicate_classes = np.array([], dtype=np.int)
 max_duplicate_class = 0
 duplicate_ids = np.array([], dtype=np.int)
+int_paths = []
+mask_paths = []
 
 runs = config.cnn_train_folders.split(",")
 for run in runs:
     dataset = get_default_dataset(config, run)
 
-    run_segments, _, run_classes, run_n_classes, _, _, _ = dataset.load(
+    run_segments, _, run_classes, run_n_classes, _, _, _, run_int_paths, run_mask_paths = dataset.load(
         preprocessor=preprocessor
     )
     run_duplicate_classes = dataset.duplicate_classes
@@ -75,6 +77,8 @@ for run in runs:
         (duplicate_classes, run_duplicate_classes), axis=0
     )
     duplicate_ids = np.concatenate((duplicate_ids, run_duplicate_ids), axis=0)
+    int_paths += run_int_paths
+    mask_paths += run_mask_paths
 
     max_duplicate_class = np.max(duplicate_classes) + 1
 
@@ -157,8 +161,8 @@ if config.roc:
         require_relevance=0.05,
     )
 
-    roc_segments, roc_positions, roc_classes, roc_n_classes, roc_features, _, _ = roc_dataset.load(
-        preprocessor=roc_preprocessor
+    roc_segments, roc_positions, roc_classes, roc_n_classes, roc_features, _, _, roc_int_paths, roc_mask_paths = roc_dataset.load(
+            preprocessor=roc_preprocessor
     )
 
     roc_duplicate_classes = roc_dataset.duplicate_classes
@@ -177,7 +181,7 @@ if config.roc:
         pair_ids[pair_ids == roc_id] = i
 
     roc_preprocessor.init_segments(
-        roc_segments, roc_classes, positions=roc_positions
+        roc_segments, roc_classes, positions=roc_positions, int_paths=roc_int_paths, mask_paths=roc_mask_paths
     )
 
     # roc generator
@@ -215,7 +219,7 @@ train_ids = np.where(train_fold == 1)[0]
 test_ids = np.where(train_fold == 0)[0]
 
 # initialize preprocessor
-preprocessor.init_segments(segments, classes, train_ids=train_ids)
+preprocessor.init_segments(segments, classes, train_ids=train_ids, int_paths=int_paths, mask_paths=mask_paths)
 
 # save scaler mean in a csv
 if config.remove_mean:
@@ -259,7 +263,7 @@ if config.retrain:
     saver = tf.train.import_meta_graph(config.retrain + ".meta")
 else:
     # define a new model
-    init_model(tuple(preprocessor.voxels), n_classes)
+    init_model(tuple(preprocessor.voxels), (64, 1024), n_classes)
 
     # model saver
     saver = tf.train.Saver(max_to_keep=config.checkpoints)
@@ -268,6 +272,7 @@ else:
 cnn_graph = tf.get_default_graph()
 
 cnn_input = cnn_graph.get_tensor_by_name("InputScope/input:0")
+cnn_input_vis = cnn_graph.get_tensor_by_name("InputScope/input_vis:0")
 y_true = cnn_graph.get_tensor_by_name("y_true:0")
 training = cnn_graph.get_tensor_by_name("training:0")
 scales = cnn_graph.get_tensor_by_name("scales:0")
@@ -328,13 +333,14 @@ with tf.Session() as sess:
         console_output_size = 0
         for step, train in enumerate(batches):
             if train:
-                batch_segments, batch_classes = gen_train.next()
+                batch_segments, batch_classes, batch_vis_views = gen_train.next()
 
                 # run optimizer and calculate loss and accuracy
                 summary, batch_loss, batch_loss_c, batch_loss_r, batch_accuracy, batch_prob, _ = sess.run(
                     [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, train_op],
                     feed_dict={
                         cnn_input: batch_segments,
+                        cnn_input_vis: batch_vis_views,
                         y_true: batch_classes,
                         training: True,
                         scales: preprocessor.last_scales,
@@ -354,13 +360,14 @@ with tf.Session() as sess:
                 train_accuracy += batch_accuracy
                 train_step += 1
             else:
-                batch_segments, batch_classes = gen_test.next()
+                batch_segments, batch_classes, batch_vis_views = gen_test.next()
 
                 # calculate test loss and accuracy
                 summary, batch_loss, batch_loss_c, batch_loss_r, batch_accuracy, batch_prob = sess.run(
                     [summary_batch, loss, loss_c, loss_r, accuracy, y_prob],
                     feed_dict={
                         cnn_input: batch_segments,
+                        cnn_input_vis: batch_vis_views,
                         y_true: batch_classes,
                         scales: preprocessor.last_scales,
                     },

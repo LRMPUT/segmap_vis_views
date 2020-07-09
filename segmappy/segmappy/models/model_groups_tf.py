@@ -1,10 +1,14 @@
 import tensorflow as tf
 
 # define the cnn model
-def init_model(input_shape, n_classes):
+def init_model(input_shape, input_shape_vis, n_classes):
     with tf.name_scope("InputScope") as scope:
         cnn_input = tf.placeholder(
             dtype=tf.float32, shape=(None,) + input_shape + (1,), name="input"
+        )
+
+        cnn_input_vis = tf.placeholder(
+                dtype=tf.float32, shape=(None,) + input_shape_vis + (2,), name="input_vis"
         )
 
     # base convolutional layers
@@ -57,8 +61,85 @@ def init_model(input_shape, n_classes):
         name="conv5",
     )
 
-    flatten = tf.contrib.layers.flatten(inputs=conv3)
-    flatten = tf.concat([flatten, scales], axis=1, name="flatten")
+    # visual view convolution
+    conv1_vis = tf.layers.conv2d(
+            inputs=cnn_input_vis,
+            filters=16,
+            kernel_size=(5, 15),
+            padding="same",
+            activation=tf.nn.relu,
+            use_bias=True,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            name="conv1_vis",
+    )
+
+    pool1_vis = tf.layers.max_pooling2d(
+        inputs=conv1_vis, pool_size=(2, 2), strides=(2, 2), name="pool1_vis"
+    )
+
+    conv2_vis = tf.layers.conv2d(
+            inputs=pool1_vis,
+            filters=32,
+            kernel_size=(3, 15),
+            padding="same",
+            activation=tf.nn.relu,
+            use_bias=True,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            name="conv2_vis",
+    )
+
+    pool2_vis = tf.layers.max_pooling2d(
+            inputs=conv2_vis, pool_size=(2, 2), strides=(2, 2), name="pool2_vis"
+    )
+
+    conv3_vis = tf.layers.conv2d(
+            inputs=pool2_vis,
+            filters=64,
+            kernel_size=(3, 9),
+            padding="same",
+            activation=tf.nn.relu,
+            use_bias=True,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            name="conv3_vis",
+    )
+
+    pool3_vis = tf.layers.max_pooling2d(
+            inputs=conv3_vis, pool_size=(2, 2), strides=(2, 1), name="pool3_vis"
+    )
+
+    conv4_vis = tf.layers.conv2d(
+            inputs=pool3_vis,
+            filters=64,
+            kernel_size=(3, 7),
+            padding="same",
+            activation=tf.nn.relu,
+            use_bias=True,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            name="conv4_vis",
+    )
+
+    pool4_vis = tf.layers.max_pooling2d(
+            inputs=conv4_vis, pool_size=(2, 2), strides=(2, 1), name="pool4_vis"
+    )
+
+    conv5_vis = tf.layers.conv2d(
+            inputs=pool4_vis,
+            filters=64,
+            kernel_size=(3, 5),
+            padding="same",
+            activation=tf.nn.relu,
+            use_bias=True,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            name="conv5_vis",
+    )
+
+    # pool5_vis = tf.layers.max_pooling2d(
+    #         inputs=conv5_vis, pool_size=(2, 2), strides=(2, 2), name="pool1_vis"
+    # )
+
+    flatten_vol = tf.contrib.layers.flatten(inputs=conv3)
+    flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis)
+    flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
 
     # classification network
     dense1 = tf.layers.dense(
