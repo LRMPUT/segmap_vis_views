@@ -10,6 +10,8 @@
 #include "segmatch/points_neighbors_providers/kdtree_points_neighbors_provider.hpp"
 #include "segmatch/points_neighbors_providers/octree_points_neighbors_provider.hpp"
 
+#include <opencv2/opencv.hpp>
+
 namespace segmatch {
 
 // Force the compiler to reuse instantiations provided in local_map.cpp
@@ -69,6 +71,43 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
   }
 
   vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
+
+  // for(auto &curVisView : new_views){
+  //   const laser_slam_ros::VisualView::Matrix &intensity = curVisView.getIntensity();
+  //   pcl::PointCloud<pcl::PointXYZ> pointsXYZ;
+  //   const auto &points = getFilteredPoints();
+  //   for(auto &pt : points){
+  //     pcl::PointXYZ ptXYZ(pt.x, pt.y, pt.z);
+  //     pointsXYZ.push_back(ptXYZ);
+  //   }
+  //   const laser_slam_ros::VisualView::MatrixInt &mask = curVisView.getMask(pointsXYZ);
+  //
+  //   cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
+  //   cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
+  //   for (int r = 0; r < intensity.rows(); ++r) {
+  //     for (int c = 0; c < intensity.cols(); ++c) {
+  //       intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+  //     }
+  //   }
+  //   for (int r = 0; r < mask.rows(); ++r) {
+  //     for (int c = 0; c < mask.cols(); ++c) {
+  //       if (mask(r, c) > 0) {
+  //         maskMat.at<uint8_t>(r, c) = 255;
+  //       } else {
+  //         maskMat.at<uint8_t>(r, c) = 0;
+  //       }
+  //     }
+  //   }
+  //
+  //   // cout << "segment_view pose = " << endl << segment_view.T_w_linkpose.getTransformationMatrix() << endl;
+  //   // cout << "vis_view pose = " << endl << vis_view.getPose().T_w.getTransformationMatrix() << endl;
+  //   // cout << "intensity.maxCoeff() = " << intensity.maxCoeff() << endl;
+  //
+  //   cv::imshow("intensity", intensityMat*40.0);
+  //   cv::imshow("mask", maskMat);
+  //
+  //   cv::waitKey(50);
+  // }
 }
 
 template<typename InputPointT, typename ClusteredPointT>

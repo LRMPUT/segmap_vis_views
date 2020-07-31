@@ -216,11 +216,11 @@ bool exportView(const std::string &dir,
   const laser_slam_ros::VisualView::Matrix &intensity = vis_view.getIntensity();
   const laser_slam_ros::VisualView::MatrixInt &mask = vis_view.getMask(segment_view.point_cloud);
 
-  cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
+  cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_8UC1, cv::Scalar(0));
   cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
   for (int r = 0; r < intensity.rows(); ++r) {
     for (int c = 0; c < intensity.cols(); ++c) {
-      intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+      intensityMat.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
     }
   }
   for (int r = 0; r < mask.rows(); ++r) {
@@ -233,15 +233,27 @@ bool exportView(const std::string &dir,
     }
   }
 
+  cout << "segment_view pose = " << endl << segment_view.T_w_linkpose.getTransformationMatrix() << endl;
+  cout << "vis_view pose = " << endl << vis_view.getPose().T_w.getTransformationMatrix() << endl;
   // cout << "intensity.maxCoeff() = " << intensity.maxCoeff() << endl;
-
-  // cv::imshow("intensity", intensityMat);
-  // cv::imshow("mask", maskMat);
+  cv::Mat intensityColor;
+  cv::applyColorMap(intensityMat, intensityColor, cv::COLORMAP_JET);
+  for (int r = 0; r < mask.rows(); ++r) {
+    for (int c = 0; c < mask.cols(); ++c) {
+      if(mask(r, c) == 0){
+        intensityColor.at<cv::Vec3b>(r, c) *= 0.33;
+      }
+    }
+  }
+  cv::imshow("intensity", intensityColor);
+  cv::imshow("mask", maskMat);
 
   char filename[100];
   sprintf(filename, "%06ld_%03d.png", segment_id, view_idx);
   cv::imwrite((boost::filesystem::path(dir) / (std::string("int_") + filename)).string(), intensityMat);
   cv::imwrite((boost::filesystem::path(dir) / (std::string("mask_") + filename)).string(), maskMat);
+
+  cv::waitKey();
 }
 
 bool exportVisualViews(const std::string& dir,
