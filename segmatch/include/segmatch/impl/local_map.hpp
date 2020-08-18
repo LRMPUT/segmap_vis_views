@@ -70,6 +70,7 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
     is_normal_modified_since_last_update_ = std::vector<bool>(getFilteredPoints().size(), false);
   }
 
+  // LOG(INFO) << "before LocalMap vis views = " << vis_views_.size() << ", adding " << new_views.size() << " views";
   vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
 
   // for(auto &curVisView : new_views){
@@ -108,6 +109,7 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
   //
   //   cv::waitKey(50);
   // }
+  // LOG(INFO) << "after LocalMap vis views = " << vis_views_.size();
 }
 
 template<typename InputPointT, typename ClusteredPointT>

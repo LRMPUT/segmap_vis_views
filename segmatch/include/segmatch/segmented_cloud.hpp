@@ -204,7 +204,11 @@ class SegmentedCloud {
 
   void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views);
 
-  std::vector<laser_slam_ros::VisualView> getVisViews() const {
+  std::vector<laser_slam_ros::VisualView>& getVisViews() {
+    return vis_views_;
+  }
+
+  const std::vector<laser_slam_ros::VisualView>& getVisViews() const {
     return vis_views_;
   }
 

@@ -122,7 +122,7 @@ class LocalMap {
     return is_normal_modified_since_last_update_;
   }
 
-  std::vector<laser_slam_ros::VisualView> getVisViews() {
+  std::vector<laser_slam_ros::VisualView>& getVisViews() {
       return vis_views_;
   }
 

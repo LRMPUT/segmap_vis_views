@@ -99,6 +99,8 @@ void SegMatch::processAndSetAsSourceCloud(
   descriptors_->describe(&segmented_source_clouds_[track_id]);
   BENCHMARK_STOP("SM.Worker.Describe");
   BENCHMARK_RECORD_VALUE("SM.TargetMapSegments", segmented_target_cloud_.size());
+
+  LOG(INFO) << "segmented_source_clouds_[track_id] vis views = " << segmented_source_clouds_[track_id].getVisViews().size();
 }
 
 void SegMatch::processAndSetAsTargetCloud(MapCloud& target_cloud) {

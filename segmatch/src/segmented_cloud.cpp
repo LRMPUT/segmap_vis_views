@@ -342,6 +342,7 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
     //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
     // }
   }
+  // LOG(INFO) << "SegmentedCloud vis views = " << vis_views_.size();
 }
 
 

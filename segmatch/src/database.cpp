@@ -214,13 +214,19 @@ bool exportView(const std::string &dir,
                 const laser_slam_ros::VisualView &vis_view)
 {
   const laser_slam_ros::VisualView::Matrix &intensity = vis_view.getIntensity();
+  const laser_slam_ros::VisualView::Matrix &range = vis_view.getRange();
   const laser_slam_ros::VisualView::MatrixInt &mask = vis_view.getMask(segment_view.point_cloud);
 
-  cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_8UC1, cv::Scalar(0));
+  cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
+  cv::Mat rangeMat(range.rows(), range.cols(), CV_16UC1, cv::Scalar(0));
+  // cv::Mat intensityMono(intensity.rows(), intensity.cols(), CV_8UC1, cv::Scalar(0));
   cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
   for (int r = 0; r < intensity.rows(); ++r) {
     for (int c = 0; c < intensity.cols(); ++c) {
-      intensityMat.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
+      intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+      // intensityMono.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
+      // up to 65.535 * 2 m
+      rangeMat.at<uint16_t>(r, c) = std::min(range(r, c) * 500.0f, 65535.0f);
     }
   }
   for (int r = 0; r < mask.rows(); ++r) {
@@ -233,27 +239,29 @@ bool exportView(const std::string &dir,
     }
   }
 
-  cout << "segment_view pose = " << endl << segment_view.T_w_linkpose.getTransformationMatrix() << endl;
-  cout << "vis_view pose = " << endl << vis_view.getPose().T_w.getTransformationMatrix() << endl;
-  // cout << "intensity.maxCoeff() = " << intensity.maxCoeff() << endl;
-  cv::Mat intensityColor;
-  cv::applyColorMap(intensityMat, intensityColor, cv::COLORMAP_JET);
-  for (int r = 0; r < mask.rows(); ++r) {
-    for (int c = 0; c < mask.cols(); ++c) {
-      if(mask(r, c) == 0){
-        intensityColor.at<cv::Vec3b>(r, c) *= 0.33;
-      }
-    }
-  }
-  cv::imshow("intensity", intensityColor);
-  cv::imshow("mask", maskMat);
+  // cout << "segment_view pose = " << endl << segment_view.T_w_linkpose.getTransformationMatrix() << endl;
+  // cout << "vis_view pose = " << endl << vis_view.getPose().T_w.getTransformationMatrix() << endl;
+  // // cout << "intensity.maxCoeff() = " << intensity.maxCoeff() << endl;
+  // cv::Mat intensityColor;
+  // cv::applyColorMap(intensityMono, intensityColor, cv::COLORMAP_JET);
+  // for (int r = 0; r < mask.rows(); ++r) {
+  //   for (int c = 0; c < mask.cols(); ++c) {
+  //     if(mask(r, c) == 0){
+  //       intensityColor.at<cv::Vec3b>(r, c) *= 0.33;
+  //     }
+  //   }
+  // }
+  // cv::imshow("intensity", intensityColor);
+  // cv::imshow("mask", maskMat);
 
   char filename[100];
-  sprintf(filename, "%06ld_%03d.png", segment_id, view_idx);
-  cv::imwrite((boost::filesystem::path(dir) / (std::string("int_") + filename)).string(), intensityMat);
-  cv::imwrite((boost::filesystem::path(dir) / (std::string("mask_") + filename)).string(), maskMat);
+  // sprintf(filename, "%06ld_%03d", segment_id, view_idx);
+  sprintf(filename, "%03d", view_idx);
+  cv::imwrite((boost::filesystem::path(dir) / (filename + std::string("_int.png"))).string(), intensityMat);
+  cv::imwrite((boost::filesystem::path(dir) / (filename + std::string("_range.png"))).string(), rangeMat);
+  cv::imwrite((boost::filesystem::path(dir) / (filename + std::string("_mask.png"))).string(), maskMat);
 
-  cv::waitKey();
+  // cv::waitKey();
 }
 
 bool exportVisualViews(const std::string& dir,
@@ -262,14 +270,26 @@ bool exportVisualViews(const std::string& dir,
 {
   ensureDirectoryExists(dir);
 
-  const std::vector<laser_slam_ros::VisualView> vis_views = segmented_cloud.getVisViews();
+  const std::vector<laser_slam_ros::VisualView> &vis_views = segmented_cloud.getVisViews();
+
+  // LOG(INFO) << "#visual views = " << vis_views.size();
 
   for (std::unordered_map<Id, Segment>::const_iterator it = segmented_cloud.begin();
        it != segmented_cloud.end(); ++it) {
     const Segment &segment = it->second;
 
+    std::string segmentDir = dir;
+    {
+      char dirname[100];
+      sprintf(dirname, "%06ld", segment.segment_id);
+      segmentDir = (boost::filesystem::path(dir) / std::string(dirname)).string();
+      ensureDirectoryExists(segmentDir);
+    }
+
     if (export_all_views) {
       for (size_t i = 0u; i < segment.views.size(); ++i) {
+        // LOG(INFO) << "Looking for view for " << segment.segment_id << " " << i;
+
         int vis_view_idx = -1;
         for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
           // cout << vis_views[i].getTime() << endl;
@@ -281,7 +301,10 @@ bool exportVisualViews(const std::string& dir,
         }
         CHECK_GE(vis_view_idx, 0);
 
-        exportView(dir, segment.segment_id, i, segment.views[i], vis_views[vis_view_idx]);
+        laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
+        cur_view.decompress();
+        // LOG(INFO) << "Exporting " << segment.segment_id << " " << i << " " << vis_view_idx;
+        exportView(segmentDir, segment.segment_id, i, segment.views[i], cur_view);
       }
     }
     else {
@@ -306,7 +329,9 @@ bool exportVisualViews(const std::string& dir,
         }
         CHECK_GE(vis_view_idx, 0);
 
-        exportView(dir, segment.segment_id, segment.views.size() - 1, segment.getLastView(), vis_views[vis_view_idx]);
+        laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
+        cur_view.decompress();
+        exportView(dir, segment.segment_id, segment.views.size() - 1, segment.getLastView(), cur_view);
       }
     }
   }
