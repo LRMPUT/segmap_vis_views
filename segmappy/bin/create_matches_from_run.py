@@ -6,13 +6,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import ConvexHull, Delaunay
 import random
-from sklearn import metrics
+# from sklearn import metrics
 
 import ensure_segmappy_is_installed
 from segmappy import Dataset
 from segmappy.tools.hull import point_in_hull, n_points_in_hull, are_in_hull
 from segmappy.core.config import get_default_dataset_dir
-
 
 
 DATASET_FOLDER = "DCC01"

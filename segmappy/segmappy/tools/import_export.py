@@ -4,6 +4,7 @@ import numpy as np
 import os
 import fnmatch
 import re
+import glob
 
 database_folder = "./database/"
 
@@ -197,14 +198,17 @@ def load_trajectory(filename):
 def load_vis_views(folder=database_folder, dir="vis_views_database"):
 
     dir_path = os.path.join(folder, dir)
-    int_filenames = fnmatch.filter(sorted(os.listdir(dir_path)), 'int_*.png')
-    int_paths = [os.path.join(dir_path, filename) for filename in int_filenames]
-    mask_filenames = fnmatch.filter(sorted(os.listdir(dir_path)), 'mask_*.png')
-    mask_paths = [os.path.join(dir_path, filename) for filename in mask_filenames]
-    segments_ids = [int(re.split('[_.]', filename)[1]) for filename in int_filenames]
-    duplicate_ids = [int(re.split('[_.]', filename)[2]) for filename in int_filenames]
-    segments_ids_mask = [int(re.split('[_.]', filename)[1]) for filename in mask_filenames]
-    duplicate_ids_mask = [int(re.split('[_.]', filename)[2]) for filename in mask_filenames]
+
+    int_filenames = sorted(glob.glob(dir_path + '/*/*_int.png'))
+    # int_paths = [os.path.join(dir_path, filename) for filename in int_filenames]
+    int_paths = int_filenames
+    mask_filenames = sorted(glob.glob(dir_path + '/*/*_mask.png'))
+    # mask_paths = [os.path.join(dir_path, filename) for filename in mask_filenames]
+    mask_paths = mask_filenames
+    segments_ids = [int(re.split('[_./]', filename)[-4]) for filename in int_filenames]
+    duplicate_ids = [int(re.split('[_./]', filename)[-3]) for filename in int_filenames]
+    segments_ids_mask = [int(re.split('[_./]', filename)[-4]) for filename in mask_filenames]
+    duplicate_ids_mask = [int(re.split('[_./]', filename)[-3]) for filename in mask_filenames]
 
     if len(segments_ids) != len(segments_ids_mask):
         raise ValueError(
