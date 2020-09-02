@@ -272,71 +272,76 @@ bool exportVisualViews(const std::string& dir,
 
   const std::vector<laser_slam_ros::VisualView> &vis_views = segmented_cloud.getVisViews();
 
-  // LOG(INFO) << "#visual views = " << vis_views.size();
+  if(!vis_views.empty()) {
+    // LOG(INFO) << "#visual views = " << vis_views.size();
 
-  for (std::unordered_map<Id, Segment>::const_iterator it = segmented_cloud.begin();
-       it != segmented_cloud.end(); ++it) {
-    const Segment &segment = it->second;
+    for (std::unordered_map<Id, Segment>::const_iterator it = segmented_cloud.begin();
+         it != segmented_cloud.end(); ++it) {
+      const Segment &segment = it->second;
 
-    std::string segmentDir = dir;
-    {
-      char dirname[100];
-      sprintf(dirname, "%06ld", segment.segment_id);
-      segmentDir = (boost::filesystem::path(dir) / std::string(dirname)).string();
-      ensureDirectoryExists(segmentDir);
-    }
+      std::string segmentDir = dir;
+      {
+        char dirname[100];
+        sprintf(dirname, "%06ld", segment.segment_id);
+        segmentDir = (boost::filesystem::path(dir) / std::string(dirname)).string();
+        ensureDirectoryExists(segmentDir);
+      }
 
-    if (export_all_views) {
-      for (size_t i = 0u; i < segment.views.size(); ++i) {
-        // LOG(INFO) << "Looking for view for " << segment.segment_id << " " << i;
+      if (export_all_views) {
+        for (size_t i = 0u; i < segment.views.size(); ++i) {
+          // LOG(INFO) << "Looking for view for " << segment.segment_id << " " << i;
 
-        int vis_view_idx = -1;
-        for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
-          // cout << vis_views[i].getTime() << endl;
-          // there should be always visual view for the view
-          if (vis_views[vis_i].getTime() == segment.views[i].timestamp_ns) {
-            vis_view_idx = vis_i;
-            break;
+          int vis_view_idx = -1;
+          for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
+            // cout << vis_views[i].getTime() << endl;
+            // there should be always visual view for the view
+            if (vis_views[vis_i].getTime() == segment.views[i].timestamp_ns) {
+              vis_view_idx = vis_i;
+              break;
+            }
           }
+          CHECK_GE(vis_view_idx, 0);
+
+          laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
+          cur_view.decompress();
+          // LOG(INFO) << "Exporting " << segment.segment_id << " " << i << " " << vis_view_idx;
+          exportView(segmentDir, segment.segment_id, i, segment.views[i], cur_view);
         }
-        CHECK_GE(vis_view_idx, 0);
-
-        laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
-        cur_view.decompress();
-        // LOG(INFO) << "Exporting " << segment.segment_id << " " << i << " " << vis_view_idx;
-        exportView(segmentDir, segment.segment_id, i, segment.views[i], cur_view);
       }
-    }
-    else {
-      std::vector<laser_slam::Time> timestamps;
-      for (size_t i = 0u; i < segment.views.size(); ++i) {
-        timestamps.push_back(segment.views[i].timestamp_ns);
-        // cout << timestamps.back() << endl;
-      }
-      std::sort(timestamps.begin(), timestamps.end());
-      if (!timestamps.empty()) {
-        laser_slam::Time view_ts = timestamps[timestamps.size() / 2];
+      else {
+        std::vector<laser_slam::Time> timestamps;
+        for (size_t i = 0u; i < segment.views.size(); ++i) {
+          timestamps.push_back(segment.views[i].timestamp_ns);
+          // cout << timestamps.back() << endl;
+        }
+        std::sort(timestamps.begin(), timestamps.end());
+        if (!timestamps.empty()) {
+          laser_slam::Time view_ts = timestamps[timestamps.size() / 2];
 
-        // cout << "Visual views timestamps:" << endl;
-        int vis_view_idx = -1;
-        for (int i = 0; i < vis_views.size(); ++i) {
-          // cout << vis_views[i].getTime() << endl;
-          // there should be always visual view for the view
-          if (vis_views[i].getTime() == view_ts) {
-            vis_view_idx = i;
-            break;
+          // cout << "Visual views timestamps:" << endl;
+          int vis_view_idx = -1;
+          for (int i = 0; i < vis_views.size(); ++i) {
+            // cout << vis_views[i].getTime() << endl;
+            // there should be always visual view for the view
+            if (vis_views[i].getTime() == view_ts) {
+              vis_view_idx = i;
+              break;
+            }
           }
-        }
-        CHECK_GE(vis_view_idx, 0);
+          CHECK_GE(vis_view_idx, 0);
 
-        laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
-        cur_view.decompress();
-        exportView(dir, segment.segment_id, segment.views.size() - 1, segment.getLastView(), cur_view);
+          laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
+          cur_view.decompress();
+          exportView(dir, segment.segment_id, segment.views.size() - 1, segment.getLastView(), cur_view);
+        }
       }
     }
+    LOG(INFO) << segmented_cloud.getNumberOfValidSegments() << " views written to " << dir;
+    return true;
   }
-  LOG(INFO) << segmented_cloud.getNumberOfValidSegments() << " views written to " << dir;
-  return true;
+  else{
+    return false;
+  }
 }
 
 bool exportPositions(const std::string& filename, const SegmentedCloud& segmented_cloud,

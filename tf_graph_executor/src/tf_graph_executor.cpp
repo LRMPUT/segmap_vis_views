@@ -15,7 +15,9 @@ namespace tf_graph_executor {
 
 TensorflowGraphExecutor::TensorflowGraphExecutor(const std::string& pathToGraph) {
   LOG(INFO) << "Entering TensorflowGraphExecutor with path " << pathToGraph;
-  this->tensorflowSession = NewSession(SessionOptions());
+  auto options = tensorflow::SessionOptions();
+  options.config.mutable_gpu_options()->set_allow_growth(true);
+  this->tensorflowSession = NewSession(options);
   if (this->tensorflowSession == nullptr) {
     throw runtime_error("Could not create Tensorflow session.");
   }

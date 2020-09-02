@@ -121,6 +121,12 @@ class Config(object):
         self.cnn_model_folder = os.path.abspath(
             os.path.join(self.model_base_dir, config.get("train", "cnn_model_folder"))
         )
+        self.cnn_model_folder_wo_vis_views = os.path.abspath(
+            os.path.join(self.model_base_dir, config.get("train", "cnn_model_folder_wo_vis_views"))
+        )
+        self.cnn_model_folder_w_vis_views = os.path.abspath(
+            os.path.join(self.model_base_dir, config.get("train", "cnn_model_folder_w_vis_views"))
+        )
         try:
             self.semantics_folder_name = config.get("train", "semantics_model_folder")
         except:

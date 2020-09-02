@@ -100,7 +100,7 @@ void SegMatch::processAndSetAsSourceCloud(
   BENCHMARK_STOP("SM.Worker.Describe");
   BENCHMARK_RECORD_VALUE("SM.TargetMapSegments", segmented_target_cloud_.size());
 
-  LOG(INFO) << "segmented_source_clouds_[track_id] vis views = " << segmented_source_clouds_[track_id].getVisViews().size();
+  // LOG(INFO) << "segmented_source_clouds_[track_id] vis views = " << segmented_source_clouds_[track_id].getVisViews().size();
 }
 
 void SegMatch::processAndSetAsTargetCloud(MapCloud& target_cloud) {
@@ -120,7 +120,7 @@ void SegMatch::transferSourceToTarget(unsigned int track_id,
   filterNearestSegmentsInCloud(segmented_target_cloud_, params_.centroid_distance_threshold_m,
                                5u);
 
-  // classifier_->setTarget(segmented_target_cloud_);
+  classifier_->setTarget(segmented_target_cloud_);
 }
 
 void SegMatch::processCloud(MapCloud& cloud,

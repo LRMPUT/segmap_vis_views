@@ -27,6 +27,7 @@ parser.add_argument("--retrain")
 parser.add_argument("--checkpoints", type=int, default=1)
 parser.add_argument("--keep-best", action="store_true")
 parser.add_argument("--roc", action="store_true")
+parser.add_argument("--vis_views", action="store_true")
 args = parser.parse_args()
 config.log_name = args.log
 config.debug = args.debug
@@ -34,6 +35,7 @@ config.checkpoints = args.checkpoints
 config.retrain = args.retrain
 config.keep_best = args.keep_best
 config.roc = args.roc
+config.vis_views = args.vis_views
 
 # create or empty the model folder
 if not os.path.exists(config.cnn_model_folder):
@@ -263,7 +265,7 @@ if config.retrain:
     saver = tf.train.import_meta_graph(config.retrain + ".meta")
 else:
     # define a new model
-    init_model(tuple(preprocessor.voxels), (64, 1024), n_classes)
+    init_model(tuple(preprocessor.voxels), (64, 1024), n_classes, vis_views=config.vis_views)
 
     # model saver
     saver = tf.train.Saver(max_to_keep=config.checkpoints)
@@ -293,7 +295,12 @@ train_op = cnn_graph.get_operation_by_name("train_op")
 summary_batch = tf.summary.merge_all("summary_batch")
 summary_epoch = tf.summary.merge_all("summary_epoch")
 
-with tf.Session() as sess:
+# os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+
+config_tf = tf.ConfigProto()
+config_tf.gpu_options.allow_growth = True
+
+with tf.Session(config=config_tf) as sess:
     # tensorboard statistics
     if config.log_name:
         train_writer = tf.summary.FileWriter(
@@ -335,6 +342,9 @@ with tf.Session() as sess:
             if train:
                 batch_segments, batch_classes, batch_vis_views = gen_train.next()
 
+                # run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                # run_options = tf.RunOptions()
+                # run_metadata = tf.RunMetadata()
                 # run optimizer and calculate loss and accuracy
                 summary, batch_loss, batch_loss_c, batch_loss_r, batch_accuracy, batch_prob, _ = sess.run(
                     [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, train_op],
@@ -345,6 +355,8 @@ with tf.Session() as sess:
                         training: True,
                         scales: preprocessor.last_scales,
                     },
+                    # options=run_options,
+                    # run_metadata=run_metadata
                 )
 
                 if config.debug:
@@ -352,6 +364,7 @@ with tf.Session() as sess:
                         debug_write_pred(segment_id, batch_prob[i], train)
 
                 if config.log_name:
+                    # train_writer.add_run_metadata(run_metadata, 'run_%d' % step, step)
                     train_writer.add_summary(summary, sess.run(global_step))
 
                 train_loss += batch_loss
@@ -392,7 +405,7 @@ with tf.Session() as sess:
             # print results
             sys.stdout.write("\b" * console_output_size)
 
-            console_output = "epoch %2d " % epoch
+            console_output = "epoch %2d, step %05d " % (epoch, step)
 
             if train_step:
                 console_output += "loss %.4f acc %.2f c %.4f r %.4f " % (
@@ -451,12 +464,13 @@ with tf.Session() as sess:
         if config.roc:
             cnn_features = []
             for batch in range(gen_roc.n_batches):
-                batch_segments, _ = gen_roc.next()
+                batch_segments, _, batch_vis_views = gen_roc.next()
 
                 batch_descriptors = sess.run(
                     descriptor,
                     feed_dict={
                         cnn_input: batch_segments,
+                        cnn_input_vis: batch_vis_views,
                         scales: roc_preprocessor.last_scales,
                     },
                 )
@@ -485,9 +499,13 @@ with tf.Session() as sess:
             else:
                 model_name = "model.ckpt"
 
-            saver.save(sess, os.path.join(config.cnn_model_folder, model_name))
+            if config.vis_views:
+                model_folder = config.cnn_model_folder_w_vis_views
+            else:
+                model_folder = config.cnn_model_folder_wo_vis_views
+            saver.save(sess, os.path.join(model_folder, model_name))
             tf.train.write_graph(
-                sess.graph.as_graph_def(), config.cnn_model_folder, "graph.pb"
+                sess.graph.as_graph_def(), model_folder, "graph.pb"
             )
 
         print()

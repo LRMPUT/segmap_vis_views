@@ -33,12 +33,12 @@ dataset = Dataset(
     keep_match_thresh=0.7
 )
 
-segments, positions, classes, n_classes, _, _, _ = dataset.load()
+segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths = dataset.load()
 duplicate_classes = dataset.duplicate_classes
 duplicate_ids = dataset.duplicate_ids
 
 preprocessor = get_default_preprocessor(config)
-preprocessor.init_segments(segments, classes, positions=positions)
+preprocessor.init_segments(segments, classes, positions=positions, int_paths=int_paths, mask_paths=mask_paths)
 
 # calculate all feature sets
 feature_sets = []
@@ -72,11 +72,15 @@ if config.ae_model:
     scales = ae_graph.get_tensor_by_name("scales:0")
 
     ae_features = []
-    with tf.Session() as sess:
+
+    config_tf = tf.ConfigProto()
+    config_tf.gpu_options.allow_growth = True
+
+    with tf.Session(config=config_tf) as sess:
         saver.restore(sess, config.ae_model)
 
         for batch in range(gen_test.n_batches):
-            batch_segments, _ = gen_test.next()
+            batch_segments, _, batch_vis_views = gen_test.next()
 
             batch_descriptors = sess.run(
                 ae_descriptor,
@@ -91,37 +95,84 @@ if config.ae_model:
 
     feature_sets.append(np.array(ae_features))
 
-# cnn features
+# cnn features without visual views
 tf.reset_default_graph()
 
 # restore variable names from previous session
 saver = tf.train.import_meta_graph(
-    os.path.join(config.cnn_model_folder, "model.ckpt.meta")
+    os.path.join(config.cnn_model_folder_wo_vis_views, "model.ckpt.meta")
 )
 
 # get key tensorflow variables
 cnn_graph = tf.get_default_graph()
 
 cnn_input = cnn_graph.get_tensor_by_name("InputScope/input:0")
+cnn_input_vis = cnn_graph.get_tensor_by_name("InputScope/input_vis:0")
 scales = cnn_graph.get_tensor_by_name("scales:0")
 descriptor = cnn_graph.get_tensor_by_name("OutputScope/descriptor_read:0")
 
 cnn_features = []
-with tf.Session() as sess:
-    saver.restore(sess, tf.train.latest_checkpoint(config.cnn_model_folder))
+
+config_tf = tf.ConfigProto()
+config_tf.gpu_options.allow_growth = True
+
+with tf.Session(config=config_tf) as sess:
+    saver.restore(sess, tf.train.latest_checkpoint(config.cnn_model_folder_wo_vis_views))
 
     for batch in range(gen_test.n_batches):
-        batch_segments, _ = gen_test.next()
+        batch_segments, _, batch_vis_views = gen_test.next()
 
         batch_descriptors = sess.run(
             descriptor,
-            feed_dict={cnn_input: batch_segments, scales: preprocessor.last_scales},
+            feed_dict={cnn_input: batch_segments,
+                       cnn_input_vis: batch_vis_views,
+                       scales: preprocessor.last_scales},
         )
 
         for batch_descriptor in batch_descriptors:
             cnn_features.append(batch_descriptor)
 
 feature_sets.append(np.array(cnn_features))
+
+# cnn features with visual views
+tf.reset_default_graph()
+
+# restore variable names from previous session
+saver = tf.train.import_meta_graph(
+    os.path.join(config.cnn_model_folder_w_vis_views, "model.ckpt.meta")
+)
+
+# get key tensorflow variables
+cnn_graph = tf.get_default_graph()
+
+cnn_input = cnn_graph.get_tensor_by_name("InputScope/input:0")
+cnn_input_vis = cnn_graph.get_tensor_by_name("InputScope/input_vis:0")
+scales = cnn_graph.get_tensor_by_name("scales:0")
+descriptor = cnn_graph.get_tensor_by_name("OutputScope/descriptor_read:0")
+
+cnn_features = []
+
+config_tf = tf.ConfigProto()
+config_tf.gpu_options.allow_growth = True
+
+with tf.Session(config=config_tf) as sess:
+    saver.restore(sess, tf.train.latest_checkpoint(config.cnn_model_folder_w_vis_views))
+
+    for batch in range(gen_test.n_batches):
+        batch_segments, _, batch_vis_views = gen_test.next()
+
+        batch_descriptors = sess.run(
+            descriptor,
+            feed_dict={cnn_input: batch_segments,
+                       cnn_input_vis: batch_vis_views,
+                       scales: preprocessor.last_scales},
+        )
+
+        for batch_descriptor in batch_descriptors:
+            cnn_features.append(batch_descriptor)
+
+feature_sets.append(np.array(cnn_features))
+
 
 # precompute last ids and the corresponding segment sizes for sequences
 last_ids = []
@@ -236,9 +287,9 @@ params = {
 plt.rcParams.update(params)
 
 if config.ae_model:
-    colors = ['green', 'orange', 'red']
+    colors = ['green', 'orange', 'red', 'blue']
 else:
-    colors = ['green', 'red']
+    colors = ['green', 'red', 'blue']
 
 xlim = 0
 xticks = []
@@ -270,12 +321,13 @@ ax.set_xticks(xticks)
 ax.tick_params(axis="both", direction="in")
 
 lG = mlines.Line2D([], [], color="green", label="Eigen", linewidth=lw)
-lR = mlines.Line2D([], [], color="red", label="\\textit{SegMap}", linewidth=lw)
+lR = mlines.Line2D([], [], color="red", label="\\textit{SegMap} w/o vis", linewidth=lw)
+lB = mlines.Line2D([], [], color="blue", label="\\textit{SegMap} w vis", linewidth=lw)
 if config.ae_model:
     lO = mlines.Line2D([], [], color="orange", label="AE", linewidth=lw)
-    handles = [lG, lO, lR]
+    handles = [lG, lO, lR, lB]
 else:
-    handles = [lG, lR]
+    handles = [lG, lR, lB]
 
 plt.legend(handles=handles, loc=3)
 

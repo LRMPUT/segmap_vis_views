@@ -1,5 +1,6 @@
 #include "segmapper/segmapper.hpp"
 
+#include <fstream>
 #include <stdlib.h>
 
 #include <laser_slam/benchmarker.hpp>
@@ -162,6 +163,8 @@ void SegMapper::segMatchThread() {
 
   unsigned int n_loops = 0u;
 
+  std::ofstream loopClosuresFile("loop_closures.log");
+
   while (ros::ok()) {
     // If all the tracks have been skipped consecutively, sleep for a bit to
     // free some CPU time.
@@ -225,6 +228,23 @@ void SegMapper::segMatchThread() {
             " time_a_ns: " << loop_closure.time_a_ns <<
             " track_id_b: " << loop_closure.track_id_b <<
             " time_b_ns: " << loop_closure.time_b_ns;
+
+        {
+          SE3 w_T_a_b = loop_closure.T_a_b;
+          SE3 T_w_a = incremental_estimator_->getLaserTrack(loop_closure.track_id_a)->evaluate(loop_closure.time_a_ns);
+          SE3 T_w_b = incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->evaluate(loop_closure.time_b_ns);
+          SE3 a_T_a_b = T_w_a.inverse() * w_T_a_b * T_w_b;
+
+          loopClosuresFile << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_a_ns) << " "
+                           << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_b_ns) << " "
+                           << a_T_a_b.asVector()(4) << " "
+                           << a_T_a_b.asVector()(5) << " "
+                           << a_T_a_b.asVector()(6) << " "
+                           << a_T_a_b.asVector()(1) << " "
+                           << a_T_a_b.asVector()(2) << " "
+                           << a_T_a_b.asVector()(3) << " "
+                           << a_T_a_b.asVector()(0) << std::endl;
+        }
 
         // Prevent the workers to process further scans (and add variables to the graph).
         BENCHMARK_START("SM.ProcessLoopClosure.WaitingForLockOnLaserSlamWorkers");

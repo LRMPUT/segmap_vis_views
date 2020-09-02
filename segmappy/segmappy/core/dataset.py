@@ -1,6 +1,7 @@
 from __future__ import print_function
 import numpy as np
 import os
+import cv2
 
 from .config import get_default_dataset_dir
 
@@ -93,6 +94,8 @@ class Dataset(object):
         if self.require_diff_points > 0:
             assert preprocessor is not None
             self._remove_similar(preprocessor)
+
+        self._remove_poorly_visible()
 
         # combine classes based on matches
         if self.use_matches:
@@ -312,6 +315,20 @@ class Dataset(object):
         self._trim_data(keep)
 
         print("  Found %d segments that are dissimilar" % len(self.segments))
+
+    # remove segments that are poorly visible
+    def _remove_poorly_visible(self):
+        keep = np.ones(self.classes.size).astype(np.bool)
+        for i in range(self.classes.size):
+            cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH)
+            cnt = np.nonzero(cur_mask)[0].size
+
+            if cnt < 200:
+                keep[i] = False
+
+        self._trim_data(keep)
+
+        print("  Found %d segments that are properly visible" % len(self.segments))
 
     def _sort_ids(self):
         ordered_ids = []

@@ -143,7 +143,7 @@ bool SegMatchWorker::processLocalMap(
     if (params_.export_segments_and_matches) {
       segments_database_ += segmatch_.getSourceAsSegmentedCloud(track_id);
       auto &visViews = segments_database_.getVisViews();
-      LOG(INFO) << "segments_database_ vis views = " << visViews.size();
+      // LOG(INFO) << "segments_database_ vis views = " << visViews.size();
       for(auto &view : visViews) {
         view.compress();
       }
