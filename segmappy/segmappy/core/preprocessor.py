@@ -46,14 +46,21 @@ class Preprocessor(object):
 
         self.last_scales = []
 
-    def init_segments(
-        self, segments, classes, positions=None, train_ids=None, scaler_path=None, int_paths=None, mask_paths=None
-    ):
+    def init_segments(self,
+                      segments,
+                      classes,
+                      positions=None,
+                      train_ids=None,
+                      scaler_path=None,
+                      int_paths=None,
+                      mask_paths=None,
+                      range_paths=None):
 
         self.segments = segments
         self.classes = np.array(classes)
         self.int_paths = int_paths
         self.mask_paths = mask_paths
+        self.range_paths = range_paths
 
         if self.align == "robot":
             assert positions is not None
@@ -72,13 +79,15 @@ class Preprocessor(object):
         batch_vis_views = []
         for i in segment_ids:
             batch_segments.append(self.segments[i])
-            cur_int = cv2.imread(self.int_paths[i], cv2.IMREAD_ANYDEPTH)
-            cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH)
-            batch_vis_views.append(np.stack([cur_int, cur_mask], axis=-1))
+            cur_int = cv2.imread(self.int_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            cur_range = cv2.imread(self.range_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            batch_vis_views.append(np.stack([cur_int, cur_mask, cur_range], axis=-1))
 
         batch_vis_views = np.array(batch_vis_views)
 
         batch_segments = self.process(batch_segments, train, normalize)
+        # batch_vis_views = self.process_vis_views(batch_vis_views, train, normalize)
         batch_vis_views = self.process_vis_views(batch_vis_views, train, normalize)
         batch_classes = self.classes[segment_ids]
 
@@ -120,6 +129,14 @@ class Preprocessor(object):
     def process_vis_views(self, vis_views, train=True, normalize=True):
         if train:
             vis_views = self._augment_rotation_vis(vis_views)
+        if normalize:
+            # intensity - mean 209.30, std dev 173.09
+            vis_views[:, :, :, 0] = (vis_views[:, :, :, 0] - 209.30) / 173.09
+            # mask - values in [0, 255] range
+            vis_views[:, :, :, 1] = vis_views[:, :, :, 1] / 255.0
+            # range
+            mean_mask_range = np.mean(vis_views[vis_views[:, :, :, 1] > 0, 2])
+            vis_views[:, :, :, 2] = (vis_views[:, :, :, 2] - mean_mask_range) / 7632.0
         return vis_views
 
     def get_n_batches(self, train=True):

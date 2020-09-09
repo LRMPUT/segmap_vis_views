@@ -58,14 +58,14 @@ max_duplicate_class = 0
 duplicate_ids = np.array([], dtype=np.int)
 int_paths = []
 mask_paths = []
+range_paths = []
 
 runs = config.cnn_train_folders.split(",")
 for run in runs:
     dataset = get_default_dataset(config, run)
 
-    run_segments, _, run_classes, run_n_classes, _, _, _, run_int_paths, run_mask_paths = dataset.load(
-        preprocessor=preprocessor
-    )
+    [run_segments, _, run_classes, run_n_classes, _, _, _, run_int_paths, run_mask_paths,
+     run_range_paths] = dataset.load(preprocessor=preprocessor)
     run_duplicate_classes = dataset.duplicate_classes
     run_duplicate_ids = dataset.duplicate_ids
 
@@ -81,6 +81,7 @@ for run in runs:
     duplicate_ids = np.concatenate((duplicate_ids, run_duplicate_ids), axis=0)
     int_paths += run_int_paths
     mask_paths += run_mask_paths
+    range_paths += run_range_paths
 
     max_duplicate_class = np.max(duplicate_classes) + 1
 
@@ -163,7 +164,8 @@ if config.roc:
         require_relevance=0.05,
     )
 
-    roc_segments, roc_positions, roc_classes, roc_n_classes, roc_features, _, _, roc_int_paths, roc_mask_paths = roc_dataset.load(
+    [roc_segments, roc_positions, roc_classes, roc_n_classes, roc_features, _, _, roc_int_paths, roc_mask_paths,
+     roc_range_paths] = roc_dataset.load(
             preprocessor=roc_preprocessor
     )
 
@@ -182,9 +184,13 @@ if config.roc:
     for i, roc_id in enumerate(roc_ids):
         pair_ids[pair_ids == roc_id] = i
 
-    roc_preprocessor.init_segments(
-        roc_segments, roc_classes, positions=roc_positions, int_paths=roc_int_paths, mask_paths=roc_mask_paths
-    )
+    roc_preprocessor.init_segments(roc_segments,
+                                   roc_classes,
+                                   positions=roc_positions,
+                                   int_paths=roc_int_paths,
+                                   mask_paths=roc_mask_paths,
+                                   range_paths=roc_range_paths
+                                   )
 
     # roc generator
     gen_roc = Generator(
@@ -221,7 +227,12 @@ train_ids = np.where(train_fold == 1)[0]
 test_ids = np.where(train_fold == 0)[0]
 
 # initialize preprocessor
-preprocessor.init_segments(segments, classes, train_ids=train_ids, int_paths=int_paths, mask_paths=mask_paths)
+preprocessor.init_segments(segments,
+                           classes,
+                           train_ids=train_ids,
+                           int_paths=int_paths,
+                           mask_paths=mask_paths,
+                           range_paths=range_paths)
 
 # save scaler mean in a csv
 if config.remove_mean:

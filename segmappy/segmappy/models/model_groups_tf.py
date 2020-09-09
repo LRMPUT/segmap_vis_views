@@ -8,10 +8,9 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
             dtype=tf.float32, shape=(None,) + input_shape + (1,), name="input"
         )
 
-        if vis_views:
-            cnn_input_vis = tf.placeholder(
-                    dtype=tf.float32, shape=(None,) + input_shape_vis + (2,), name="input_vis"
-            )
+        cnn_input_vis = tf.placeholder(
+            dtype=tf.float32, shape=(None,) + input_shape_vis + (3,), name="input_vis"
+        )
 
     # base convolutional layers
     y_true = tf.placeholder(dtype=tf.float32, shape=(None, n_classes), name="y_true")
@@ -107,7 +106,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         )
 
         pool3_vis = tf.layers.max_pooling2d(
-                inputs=conv3_vis, pool_size=(2, 2), strides=(2, 2), name="pool3_vis"
+                inputs=conv3_vis, pool_size=(1, 2), strides=(1, 2), name="pool3_vis"
         )
 
         conv4_vis = tf.layers.conv2d(
@@ -136,24 +135,24 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
                 name="conv5_vis",
         )
 
-        pool5_vis = tf.layers.max_pooling2d(
-                inputs=conv5_vis, pool_size=(1, 2), strides=(1, 2), name="pool5_vis"
-        )
-
-        conv6_vis = tf.layers.conv2d(
-                inputs=pool5_vis,
-                filters=64,
-                kernel_size=(3, 5),
-                padding="same",
-                activation=tf.nn.relu,
-                use_bias=True,
-                kernel_initializer=tf.contrib.layers.xavier_initializer(),
-                name="conv6_vis",
-        )
+        # pool5_vis = tf.layers.max_pooling2d(
+        #         inputs=conv5_vis, pool_size=(1, 2), strides=(1, 2), name="pool5_vis"
+        # )
+        #
+        # conv6_vis = tf.layers.conv2d(
+        #         inputs=pool5_vis,
+        #         filters=64,
+        #         kernel_size=(3, 5),
+        #         padding="same",
+        #         activation=tf.nn.relu,
+        #         use_bias=True,
+        #         kernel_initializer=tf.contrib.layers.xavier_initializer(),
+        #         name="conv6_vis",
+        # )
 
     flatten_vol = tf.contrib.layers.flatten(inputs=conv3)
     if vis_views:
-        flatten_vis = tf.contrib.layers.flatten(inputs=conv6_vis)
+        flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis)
         flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
     else:
         flatten = tf.concat([flatten_vol, scales], axis=1, name="flatten")

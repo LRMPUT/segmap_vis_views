@@ -205,23 +205,29 @@ def load_vis_views(folder=database_folder, dir="vis_views_database"):
     mask_filenames = sorted(glob.glob(dir_path + '/*/*_mask.png'))
     # mask_paths = [os.path.join(dir_path, filename) for filename in mask_filenames]
     mask_paths = mask_filenames
+    range_filenames = sorted(glob.glob(dir_path + '/*/*_range.png'))
+    range_paths = range_filenames
     segments_ids = [int(re.split('[_./]', filename)[-4]) for filename in int_filenames]
     duplicate_ids = [int(re.split('[_./]', filename)[-3]) for filename in int_filenames]
     segments_ids_mask = [int(re.split('[_./]', filename)[-4]) for filename in mask_filenames]
     duplicate_ids_mask = [int(re.split('[_./]', filename)[-3]) for filename in mask_filenames]
+    segments_ids_range = [int(re.split('[_./]', filename)[-4]) for filename in range_filenames]
+    duplicate_ids_range = [int(re.split('[_./]', filename)[-3]) for filename in range_filenames]
 
-    if len(segments_ids) != len(segments_ids_mask):
+    if len(segments_ids) != len(segments_ids_mask) != len(segments_ids_range):
         raise ValueError(
-            "Different number of intensity and mask images"
+            "Different number of intensity and mask or intensity and ranges images"
         )
 
-    if len([id_int for id_int, d_id, id_mask, d_id_mask in zip(segments_ids,
-                                                               duplicate_ids,
-                                                               segments_ids_mask,
-                                                               duplicate_ids_mask) if
-            id_int != id_mask or d_id != d_id_mask]) > 0:
+    if len([id_int for id_int, d_id, id_mask, d_id_mask, id_range, d_id_range in zip(segments_ids,
+                                                                                     duplicate_ids,
+                                                                                     segments_ids_mask,
+                                                                                     duplicate_ids_mask,
+                                                                                     segments_ids_range,
+                                                                                     duplicate_ids_range) if
+            id_int != id_mask or d_id != d_id_mask or id_int != id_range or d_id != d_id_range]) > 0:
         raise ValueError(
-            "Different segment ids in intensity and mask"
+            "Different segment ids in intensity and mask or intensity and range"
         )
 
     print(
@@ -229,7 +235,7 @@ def load_vis_views(folder=database_folder, dir="vis_views_database"):
         + str(len(int_paths))
         + " visual views"
     )
-    return int_paths, mask_paths, segments_ids, duplicate_ids
+    return int_paths, mask_paths, range_paths, segments_ids, duplicate_ids
 
 
 def write_features(

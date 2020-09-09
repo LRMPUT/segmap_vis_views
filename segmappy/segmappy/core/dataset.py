@@ -5,6 +5,7 @@ import cv2
 
 from .config import get_default_dataset_dir
 
+
 class Dataset(object):
     # load config values
     def __init__(
@@ -48,12 +49,13 @@ class Dataset(object):
         self.features, self.feature_names, fids, duplicate_fids = load_features(
             folder=self.folder
         )
-        self.int_paths, self.mask_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
+        self.int_paths, self.mask_paths, self.range_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
 
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
         vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
         self.int_paths = [self.int_paths[idx] for idx in vorder]
         self.mask_paths = [self.mask_paths[idx] for idx in vorder]
+        self.range_paths = [self.range_paths[idx] for idx in vorder]
         vids = [vids[idx] for idx in vorder]
         duplicate_vids = [duplicate_vids[idx] for idx in vorder]
 
@@ -123,7 +125,8 @@ class Dataset(object):
             self.matches,
             self.labels_dict,
             self.int_paths,
-            self.mask_paths
+            self.mask_paths,
+            self.range_paths
         )
 
     def _remove_unchanged(self):
@@ -360,6 +363,8 @@ class Dataset(object):
             self.int_paths = [self.int_paths[i] for i in ordered_ids]
         if len(self.mask_paths) > 0:
             self.mask_paths = [self.mask_paths[i] for i in ordered_ids]
+        if len(self.range_paths) > 0:
+            self.range_paths = [self.range_paths[i] for i in ordered_ids]
 
         self.duplicate_ids = self.duplicate_ids[ordered_ids]
         self.duplicate_classes = self.duplicate_classes[ordered_ids]
@@ -377,6 +382,8 @@ class Dataset(object):
             self.int_paths = [int_path for (k, int_path) in zip(keep, self.int_paths) if k]
         if len(self.mask_paths) > 0:
             self.mask_paths = [mask_path for (k, mask_path) in zip(keep, self.mask_paths) if k]
+        if len(self.range_paths) > 0:
+            self.range_paths = [range_path for (k, range_path) in zip(keep, self.range_paths) if k]
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]
