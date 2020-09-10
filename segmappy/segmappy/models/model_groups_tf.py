@@ -106,12 +106,12 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         )
 
         pool3_vis = tf.layers.max_pooling2d(
-                inputs=conv3_vis, pool_size=(1, 2), strides=(1, 2), name="pool3_vis"
+                inputs=conv3_vis, pool_size=(2, 2), strides=(2, 2), name="pool3_vis"
         )
 
         conv4_vis = tf.layers.conv2d(
                 inputs=pool3_vis,
-                filters=64,
+                filters=128,
                 kernel_size=(3, 7),
                 padding="same",
                 activation=tf.nn.relu,
@@ -126,7 +126,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
         conv5_vis = tf.layers.conv2d(
                 inputs=pool4_vis,
-                filters=64,
+                filters=128,
                 kernel_size=(3, 5),
                 padding="same",
                 activation=tf.nn.relu,
@@ -177,7 +177,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     descriptor = tf.layers.dense(
         inputs=dropout_dense1,
-        units=64,
+        units=128,
         kernel_initializer=tf.contrib.layers.xavier_initializer(),
         activation=tf.nn.relu,
         use_bias=True,

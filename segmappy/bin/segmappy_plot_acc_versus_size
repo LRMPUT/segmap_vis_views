@@ -33,12 +33,17 @@ dataset = Dataset(
     keep_match_thresh=0.7
 )
 
-segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths = dataset.load()
+segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths, range_paths = dataset.load()
 duplicate_classes = dataset.duplicate_classes
 duplicate_ids = dataset.duplicate_ids
 
 preprocessor = get_default_preprocessor(config)
-preprocessor.init_segments(segments, classes, positions=positions, int_paths=int_paths, mask_paths=mask_paths)
+preprocessor.init_segments(segments,
+                           classes,
+                           positions=positions,
+                           int_paths=int_paths,
+                           mask_paths=mask_paths,
+                           range_paths=range_paths)
 
 # calculate all feature sets
 feature_sets = []
@@ -125,7 +130,7 @@ with tf.Session(config=config_tf) as sess:
         batch_descriptors = sess.run(
             descriptor,
             feed_dict={cnn_input: batch_segments,
-                       cnn_input_vis: batch_vis_views,
+                       # cnn_input_vis: batch_vis_views,
                        scales: preprocessor.last_scales},
         )
 
