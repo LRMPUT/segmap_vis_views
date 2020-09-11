@@ -106,12 +106,12 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         )
 
         pool3_vis = tf.layers.max_pooling2d(
-                inputs=conv3_vis, pool_size=(2, 2), strides=(2, 2), name="pool3_vis"
+                inputs=conv3_vis, pool_size=(1, 2), strides=(1, 2), name="pool3_vis"
         )
 
         conv4_vis = tf.layers.conv2d(
                 inputs=pool3_vis,
-                filters=128,
+                filters=64,
                 kernel_size=(3, 7),
                 padding="same",
                 activation=tf.nn.relu,
@@ -126,7 +126,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
         conv5_vis = tf.layers.conv2d(
                 inputs=pool4_vis,
-                filters=128,
+                filters=64,
                 kernel_size=(3, 5),
                 padding="same",
                 activation=tf.nn.relu,
@@ -293,10 +293,14 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     roc_auc = tf.placeholder(dtype=tf.float32, shape=(), name="roc_auc")
 
+    img_heatmap = tf.placeholder(dtype=tf.float32, shape=(), name="img_heatmap")
+
     with tf.name_scope("summary"):
         tf.summary.scalar("loss", loss, collections=["summary_batch"])
         tf.summary.scalar("loss_c", loss_c, collections=["summary_batch"])
         tf.summary.scalar("loss_r", loss_r, collections=["summary_batch"])
         tf.summary.scalar("accuracy", accuracy, collections=["summary_batch"])
+
+        tf.summary.image('heatmap', img_heatmap, collections=["summary_batch"])
 
         tf.summary.scalar("roc_auc", roc_auc, collections=["summary_epoch"])

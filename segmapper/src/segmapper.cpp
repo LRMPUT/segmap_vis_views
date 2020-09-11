@@ -235,7 +235,8 @@ void SegMapper::segMatchThread() {
           SE3 T_w_b = incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->evaluate(loop_closure.time_b_ns);
           SE3 a_T_a_b = T_w_a.inverse() * w_T_a_b * T_w_b;
 
-          loopClosuresFile << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_a_ns) << " "
+          loopClosuresFile << laser_slam_workers_[track_id]->curveTimeToRosTime(current_pose.time_ns) << " "
+                           << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_a_ns) << " "
                            << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_b_ns) << " "
                            << a_T_a_b.asVector()(4) << " "
                            << a_T_a_b.asVector()(5) << " "
