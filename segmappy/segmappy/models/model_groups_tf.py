@@ -135,6 +135,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
                 name="conv5_vis",
         )
 
+        conv5_vis_out = tf.identity(conv5_vis, name='conv5_vis_out')
+
         # pool5_vis = tf.layers.max_pooling2d(
         #         inputs=conv5_vis, pool_size=(1, 2), strides=(1, 2), name="pool5_vis"
         # )
@@ -152,7 +154,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     flatten_vol = tf.contrib.layers.flatten(inputs=conv3)
     if vis_views:
-        flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis)
+        flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis_out)
         flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
     else:
         flatten = tf.concat([flatten_vol, scales], axis=1, name="flatten")
@@ -177,7 +179,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     descriptor = tf.layers.dense(
         inputs=dropout_dense1,
-        units=128,
+        units=64,
         kernel_initializer=tf.contrib.layers.xavier_initializer(),
         activation=tf.nn.relu,
         use_bias=True,
@@ -285,6 +287,10 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     with tf.control_dependencies(update_ops):
         train_op = optimizer.minimize(loss, name="train_op")
 
+    # visualization
+    conv5_vis_grad = tf.gradients(descriptor, conv5_vis_out, name='conv5_vis_grad')
+    conv5_vis_grad_out = tf.identity(conv5_vis_out, name='conv5_vis_grad_out')
+
     # statistics
     y_prob = tf.nn.softmax(y_pred, name="y_prob")
 
@@ -293,7 +299,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     roc_auc = tf.placeholder(dtype=tf.float32, shape=(), name="roc_auc")
 
-    img_heatmap = tf.placeholder(dtype=tf.float32, shape=(), name="img_heatmap")
+    img_heatmap = tf.placeholder(dtype=tf.uint8, shape=(None,) + input_shape_vis + (3,), name="img_heatmap")
 
     with tf.name_scope("summary"):
         tf.summary.scalar("loss", loss, collections=["summary_batch"])
@@ -301,6 +307,6 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         tf.summary.scalar("loss_r", loss_r, collections=["summary_batch"])
         tf.summary.scalar("accuracy", accuracy, collections=["summary_batch"])
 
-        tf.summary.image('heatmap', img_heatmap, collections=["summary_batch"])
+        tf.summary.image('heatmap', img_heatmap, collections=["summary_heatmap"], max_outputs=8)
 
         tf.summary.scalar("roc_auc", roc_auc, collections=["summary_epoch"])

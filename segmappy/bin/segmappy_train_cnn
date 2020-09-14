@@ -287,7 +287,6 @@ cnn_graph = tf.get_default_graph()
 
 cnn_input = cnn_graph.get_tensor_by_name("InputScope/input:0")
 cnn_input_vis = cnn_graph.get_tensor_by_name("InputScope/input_vis:0")
-conv_vis = cnn_graph.get_tensor_by_name("conv5_vis:0")
 y_true = cnn_graph.get_tensor_by_name("y_true:0")
 training = cnn_graph.get_tensor_by_name("training:0")
 scales = cnn_graph.get_tensor_by_name("scales:0")
@@ -300,6 +299,10 @@ accuracy = cnn_graph.get_tensor_by_name("accuracy:0")
 y_prob = cnn_graph.get_tensor_by_name("y_prob:0")
 descriptor = cnn_graph.get_tensor_by_name("OutputScope/descriptor_read:0")
 roc_auc = cnn_graph.get_tensor_by_name("roc_auc:0")
+
+#visualization
+conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
+conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
 img_heatmap = cnn_graph.get_tensor_by_name("img_heatmap:0")
 
 global_step = cnn_graph.get_tensor_by_name("global_step:0")
@@ -308,6 +311,7 @@ train_op = cnn_graph.get_operation_by_name("train_op")
 
 summary_batch = tf.summary.merge_all("summary_batch")
 summary_epoch = tf.summary.merge_all("summary_epoch")
+summary_heatmap = tf.summary.merge_all("summary_heatmap")
 
 # os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
@@ -390,8 +394,9 @@ with tf.Session(config=config_tf) as sess:
                 batch_segments, batch_classes, batch_vis_views = gen_test.next()
 
                 # calculate test loss and accuracy
-                summary, batch_loss, batch_loss_c, batch_loss_r, batch_accuracy, batch_prob, batch_conv_vis = sess.run(
-                    [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv_vis],
+                [summary, batch_loss, batch_loss_c, batch_loss_r,
+                 batch_accuracy, batch_prob, batch_conv_vis, batch_conv_vis_grad] = sess.run(
+                    [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv_vis, conv_vis_grad],
                     feed_dict={
                         cnn_input: batch_segments,
                         cnn_input_vis: batch_vis_views,
@@ -407,23 +412,30 @@ with tf.Session(config=config_tf) as sess:
                 if config.log_name:
                     test_writer.add_summary(summary, sess.run(global_step))
 
-                if True:
-                    intensity = tf.make_ndarray(batch_vis_views[:, :, :, 0]) * 173.09 + 209.30
-                    mask = tf.make_ndarray(batch_vis_views[:, :, :, 1]) * 255.0
-                    heatmap = tf.make_ndarray(batch_conv_vis)
+                if test_step == gen_test.n_batches - 1:
+                # if True:
+                    intensity = batch_vis_views[:, :, :, 0] * 173.09 + 209.30
+                    mask = batch_vis_views[:, :, :, 1] * 255.0
+                    heatmap = batch_conv_vis * np.sum(batch_conv_vis_grad, axis=(1, 2), keepdims=True) / (intensity.shape[1] * intensity.shape[2])
                     heatmap = np.sum(heatmap, axis=-1)
-                    img_heatmap_np = np.zeros_like(intensity)
+                    img_heatmap_np = np.zeros(intensity.shape + (3,), dtype=np.uint8)
                     for b in range(heatmap.shape[0]):
                         cur_heatmap = cv2.resize(heatmap[b], (intensity.shape[2], intensity.shape[1]))
                         cur_heatmap = np.maximum(cur_heatmap, 0.0)
                         cur_heatmap = cur_heatmap / np.max(cur_heatmap)
                         cur_heatmap = cv2.applyColorMap(np.uint8(255 * cur_heatmap), cv2.COLORMAP_JET)
-                        cur_img_heatmap = cur_heatmap * 0.5 + \
-                                          np.tile(np.maximum(intensity[b] * 255.0 / 1500.0, 255.0), [1, 1, 3])
+                        cur_img_heatmap = 0.5 * cur_heatmap + \
+                                          np.tile(np.expand_dims(np.minimum(intensity[b] * 255.0 / 1500.0, 255.0), axis=-1),
+                                                  [1, 1, 3])
+                        # cur_img_heatmap = np.tile(
+                        #                       np.expand_dims(np.minimum(intensity[b] * 255.0 / 1500.0, 255.0), axis=-1),
+                        #                       [1, 1, 3])
+                        cur_img_heatmap[mask[b] > 128.0, :] = np.array([255, 0, 0], dtype=np.uint8)
                         img_heatmap_np[b] = cur_img_heatmap
 
-                    summary = sess.run(summary_batch, feed_dict={img_heatmap: img_heatmap_np})
+                    summary = sess.run(summary_heatmap, feed_dict={img_heatmap: img_heatmap_np})
                     test_writer.add_summary(summary, sess.run(global_step))
+                    test_writer.flush()
 
                 test_loss += batch_loss
                 test_loss_c += batch_loss_c
