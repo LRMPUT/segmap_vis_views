@@ -235,6 +235,18 @@ void SegMapper::segMatchThread() {
           SE3 T_w_b = incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->evaluate(loop_closure.time_b_ns);
           SE3 a_T_a_b = T_w_a.inverse() * w_T_a_b * T_w_b;
 
+          // hack for loam results
+          {
+            // rotation from loam to segmap
+            Eigen::Matrix3d R;
+            R << 0, -1, 0,
+                 0, 0, 1,
+                 -1, 0, 0;
+            Eigen::Quaterniond q(R);
+            SE3 T(q, Eigen::Vector3d::Zero());
+            a_T_a_b = T * a_T_a_b * T.inverse();
+          }
+
           loopClosuresFile << laser_slam_workers_[track_id]->curveTimeToRosTime(current_pose.time_ns) << " "
                            << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_a_ns) << " "
                            << laser_slam_workers_[track_id]->curveTimeToRosTime(loop_closure.time_b_ns) << " "
@@ -281,6 +293,7 @@ void SegMapper::segMatchThread() {
             std::unique_lock<std::mutex> map_lock2(local_maps_mutexes_[i]);
             local_maps_[i].transform(local_map_update_transform.cast<float>());
             map_lock2.unlock();
+            LOG(INFO) << "local_map_update_transform = \n" << local_map_update_transform.getTransformationMatrix();
           } else {
             std::unique_lock<std::mutex> map_lock2(local_maps_mutexes_[i]);
             local_maps_[i].clear();

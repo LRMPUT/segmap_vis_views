@@ -155,7 +155,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     flatten_vol = tf.contrib.layers.flatten(inputs=conv3)
     if vis_views:
         flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis_out)
-        flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
+        # flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
+        flatten = tf.concat([flatten_vis], axis=1, name="flatten")
     else:
         flatten = tf.concat([flatten_vol, scales], axis=1, name="flatten")
 
@@ -273,7 +274,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     # training
     LOSS_R_WEIGHT = 200
     LOSS_C_WEIGHT = 1
-    loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
+    # loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
+    loss = tf.add(LOSS_C_WEIGHT * loss_c, 0, name="loss")
 
     global_step = tf.Variable(0, trainable=False, name="global_step")
     update_step = tf.assign(
