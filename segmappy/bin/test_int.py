@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 def main():
     vert_range = 35.68 * np.pi / 180.0
 
-    dataset_folder = '/mnt/data/datasets/JW/MulRan/DCC01/sensor_data/Ouster'
+    # dataset_folder = '/mnt/data/datasets/JW/MulRan/DCC01/sensor_data/Ouster'
+    dataset_folder = '/media/janw/JanW/datasets/JW/KITTI/2011_09_30_drive_0020_sync/2011_09_30/2011_09_30_drive_0020_sync/velodyne_points/data'
     scan_files = sorted(os.listdir(dataset_folder))
     for i in range(0, len(scan_files), 10):
         scan_file = scan_files[i]
@@ -16,7 +17,7 @@ def main():
 
         data = np.fromfile(os.path.join(dataset_folder, scan_file), dtype=np.float32).reshape((-1, 4))
 
-        int_im = np.zeros((64, 1024), dtype=np.float)
+        int_im = np.zeros((64, 2048), dtype=np.float)
         hor_angles = []
         vert_angles = []
         hor_coords = []
@@ -43,7 +44,7 @@ def main():
                 if 0 <= vert_coord < 64 and 0 <= hor_coord < 1024:
                     int_im[vert_coord, hor_coord] = pt[3]
                 else:
-                    print('vert angle = ', vert_angle * 180.0 / np.pi)
+                    # print('vert angle = ', vert_angle * 180.0 / np.pi)
                     pass
 
         # data = data.reshape((1024, 64, 4))

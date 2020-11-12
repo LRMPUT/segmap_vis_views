@@ -104,7 +104,8 @@ bool SegMatchWorker::processLocalMap(
     segmatch::SegMatch::LocalMapT& local_map,
     const laser_slam::Pose& latest_pose,
     unsigned int track_id,
-    RelativePose* loop_closure) {
+    RelativePose* loop_closure,
+    PairwiseMatches* filtered_matches_ret) {
   BENCHMARK_BLOCK("SM.Worker");
 
   if(params_.close_loops) {
@@ -159,6 +160,10 @@ bool SegMatchWorker::processLocalMap(
                                                                     track_id,
                                                                     latest_pose.time_ns,
                                                                     loop_closure);
+    if (filtered_matches_ret != NULL) {
+      // *filtered_matches_ret = filtered_matches;
+      *filtered_matches_ret = recognized_matches;
+    }
 
     // TODO move after optimizing and updating target map?
     if (params_.close_loops) {

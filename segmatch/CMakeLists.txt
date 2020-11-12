@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(segmatch)
 
 # OpenCV
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core highgui imgcodecs)
 include_directories(${OpenCV_INCLUDE_DIRS} )
 
 find_package(catkin_simple 0.1.0 REQUIRED)

@@ -34,7 +34,8 @@ class SegMatchWorker {
       segmatch::SegMatch::LocalMapT& local_map,
       const laser_slam::Pose& latest_pose,
       unsigned int track_id = 0u,
-      laser_slam::RelativePose* loop_closure = NULL);
+      laser_slam::RelativePose* loop_closure = NULL,
+      segmatch::PairwiseMatches* filtered_matches_ret = NULL);
 
   void update(const laser_slam::Trajectory& trajectory);
 

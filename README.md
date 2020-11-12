@@ -78,7 +78,7 @@ For more details on the optional compile flags or in case of issues compiling se
 
 ```
 $ cd ~/segmap_ws
-$ catkin build tensorflow_ros_cpp
+$ catkin build tensorflow_ros_cpp -DCMAKE_BUILD_TYPE=Release --jobs=4 --cmake-args -DFORCE_TF_PIP_SEARCH="ON" -DTF_PIP_PATH="$HOME/anaconda3/envs/tf_gpu_python2/lib/python2.7/site-packages/tensorflow"
 ```
 
 ### Build SegMap
@@ -87,6 +87,13 @@ Finally, build the *segmapper* package which will compile all dependencies and S
 ```
 $ cd ~/segmap_ws
 $ catkin build segmapper
+```
+
+### Error libfontconfig.so.1: undefined symbol: FT_Done_MM_Var
+
+Modify CMakeLists.txt:
+```
+target_link_libraries(segmapper_node /home/janw/anaconda3/envs/tf_gpu_python2/lib/libfreetype.so.6 fontconfig harfbuzz ${PROJECT_NAME})
 ```
 
 #### (Optional) Install SegmapPy python package
@@ -129,7 +136,7 @@ $ roslaunch segmapper kitti_localization.launch
 
 An online SLAM example with data-driven descriptor can be run with
 ```
-$ roslaunch segmapper cnn_kitti_loop_closure.launch
+LD_LIBRARY_PATH=$HOME/anaconda3/envs/tf_gpu_python2/lib:$LD_LIBRARY_PATH roslaunch segmapper cnn_kitti_loop_closure.launch
 ```
 You can now visualize the reconstructed target map in rviz by subscribing to `/segmatch/target_reconstruction`.
 

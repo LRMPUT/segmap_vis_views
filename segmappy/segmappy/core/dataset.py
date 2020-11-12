@@ -21,6 +21,7 @@ class Dataset(object):
         require_diff_points=0,
         normalize_classes=True,
         use_visual=False,
+        largest_vis_view=False
     ):
         abs_folder = os.path.abspath(os.path.join(base_dir, folder))
         try:
@@ -38,6 +39,7 @@ class Dataset(object):
         self.require_diff_points = require_diff_points
         self.normalize_classes = normalize_classes
         self.use_visual = use_visual
+        self.largest_vis_view = largest_vis_view
 
     # load the segment dataset
     def load(self, preprocessor=None):
@@ -51,19 +53,25 @@ class Dataset(object):
         )
         self.int_paths, self.mask_paths, self.range_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
 
+        self.classes = np.array(sids)
+        self.duplicate_classes = self.classes.copy()
+        self.positions = np.array(self.positions)
+        self.features = np.array(self.features)
+        self.duplicate_ids = np.array(duplicate_sids)
+
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
-        vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
+        self._remove_no_vis(complete_id_to_vidx)
+
+        vorder = [complete_id_to_vidx[csid] for csid in zip(self.classes, self.duplicate_ids)]
         self.int_paths = [self.int_paths[idx] for idx in vorder]
         self.mask_paths = [self.mask_paths[idx] for idx in vorder]
         self.range_paths = [self.range_paths[idx] for idx in vorder]
         vids = [vids[idx] for idx in vorder]
         duplicate_vids = [duplicate_vids[idx] for idx in vorder]
 
-        self.classes = np.array(sids)
-        self.duplicate_classes = self.classes.copy()
-        self.positions = np.array(self.positions)
-        self.features = np.array(self.features)
-        self.duplicate_ids = np.array(duplicate_sids)
+        for i in range(len(vids)):
+            if (vids[i], duplicate_vids[i]) != (self.classes[i], self.duplicate_ids[i]):
+                raise Exception('Error: ', (vids[i], duplicate_vids[i]), (self.classes[i], self.duplicate_ids[i]))
 
         # load labels
         from ..tools.import_export import load_labels
@@ -99,6 +107,9 @@ class Dataset(object):
 
         self._remove_poorly_visible()
 
+        if self.largest_vis_view:
+            self._select_largest_vis_views(vids, duplicate_vids)
+
         # combine classes based on matches
         if self.use_matches:
             self._combine_classes()
@@ -115,6 +126,8 @@ class Dataset(object):
         )
 
         self._sort_ids()
+
+        # self._calc_stats()
 
         return (
             self.segments,
@@ -164,12 +177,13 @@ class Dataset(object):
             merge_ids = np.where(self.classes == merge_sequence)[0]
             target_ids = np.where(self.classes == target_sequence)[0]
 
-            self.classes[merge_ids] = target_sequence
-            self.duplicate_ids[target_ids] += merge_ids.size
+            if merge_ids.size > 0 and target_ids.size > 0:
+                self.classes[merge_ids] = target_sequence
+                self.duplicate_ids[target_ids] += merge_ids.size
 
-            subclasses[target_sequence].append(merge_sequence)
-            subclasses[target_sequence] += subclasses[merge_sequence]
-            del subclasses[merge_sequence]
+                subclasses[target_sequence].append(merge_sequence)
+                subclasses[target_sequence] += subclasses[merge_sequence]
+                del subclasses[merge_sequence]
 
         # calculate how relevant the merges are based on size
         relevant = {}
@@ -333,6 +347,16 @@ class Dataset(object):
 
         print("  Found %d segments that are properly visible" % len(self.segments))
 
+    def _remove_no_vis(self, complete_id_to_vidx):
+        keep = np.ones(self.classes.size).astype(np.bool)
+        for idx, csid in enumerate(zip(self.classes, self.duplicate_ids)):
+            if csid not in complete_id_to_vidx:
+                keep[idx] = False
+
+        self._trim_data_no_vis(keep)
+
+        print("  Found %d segments that have views" % len(self.segments))
+
     def _sort_ids(self):
         ordered_ids = []
         for cls in np.unique(self.classes):
@@ -387,3 +411,81 @@ class Dataset(object):
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]
+
+    def _trim_data_no_vis(self, keep):
+        self.segments = [segment for (k, segment) in zip(keep, self.segments) if k]
+        self.classes = self.classes[keep]
+
+        if self.positions.size > 0:
+            self.positions = self.positions[keep]
+        if self.features.size > 0:
+            self.features = self.features[keep]
+
+        self.duplicate_ids = self.duplicate_ids[keep]
+        self.duplicate_classes = self.duplicate_classes[keep]
+
+    def _calc_stats(self):
+        int_mean = 0.0
+        range_mean = 0.0
+        for i in range(len(self.int_paths)):
+            cur_int = cv2.imread(self.int_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            # cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            cur_range = cv2.imread(self.range_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+
+            cur_int_mean = np.mean(cur_int[cur_range > 1000.0])
+            cur_range_mean = np.mean(cur_range[cur_range > 1000.0])
+            int_mean = float(i) / (i + 1) * int_mean + 1.0 / (i + 1) * cur_int_mean
+            range_mean = float(i) / (i + 1) * range_mean + 1.0 / (i + 1) * cur_range_mean
+
+        int_var = 0.0
+        range_var = 0.0
+        for i in range(len(self.int_paths)):
+            cur_int = cv2.imread(self.int_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            # cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+            cur_range = cv2.imread(self.range_paths[i], cv2.IMREAD_ANYDEPTH).astype(np.float)
+
+            cur_N = np.count_nonzero(cur_range > 2.0)
+            cur_int_var = np.sum(np.square(cur_int[cur_range > 1000.0] - int_mean)) / (cur_N - 1)
+            cur_range_var = np.sum(np.square(cur_range[cur_range > 1000.0] - range_mean)) / (cur_N - 1)
+            int_var = float(i) / (i + 1) * int_var + 1.0 / (i + 1) * cur_int_var
+            range_var = float(i) / (i + 1) * range_var + 1.0 / (i + 1) * cur_range_var
+
+        print('int mean: ', int_mean)
+        print('int stddev: ', np.sqrt(int_var))
+        print('range mean: ', range_mean)
+        print('range stddev: ', np.sqrt(range_var))
+
+    def _select_largest_vis_views(self, vids, duplicate_vids):
+        cvididxs = sorted(zip(self.classes, self.duplicate_ids, range(len(self.classes))))
+
+        cid_to_idx = {}
+
+        prev_id = -1
+        largest_idx = 0
+        largest_size = 0
+        for id, did, idx in cvididxs:
+            if id != prev_id:
+                largest_idx = idx
+                largest_size = 0
+                prev_id = id
+
+            cur_mask = cv2.imread(self.mask_paths[idx], cv2.IMREAD_ANYDEPTH)
+            cur_size = np.nonzero(cur_mask)[0].size
+            if cur_size > largest_size:
+                largest_size = cur_size
+                largest_idx = idx
+
+            cid_to_idx[(id, did)] = largest_idx
+
+        new_int_paths = []
+        new_mask_paths = []
+        new_range_paths = []
+
+        for idx, csid in enumerate(zip(self.classes, self.duplicate_ids)):
+            new_int_paths.append(self.int_paths[cid_to_idx[csid]])
+            new_mask_paths.append(self.mask_paths[cid_to_idx[csid]])
+            new_range_paths.append(self.range_paths[cid_to_idx[csid]])
+
+        self.int_paths = new_int_paths
+        self.mask_paths = new_mask_paths
+        self.range_paths = new_range_paths

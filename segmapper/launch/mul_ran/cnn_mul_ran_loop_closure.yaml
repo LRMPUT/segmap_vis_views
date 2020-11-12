@@ -8,6 +8,8 @@ SegMapper: {
   publish_world_to_odom: true,
   tf_publication_rate_hz: 10,
   
+  export_loop_closures: false,
+    
   LaserSlamWorker: {
     use_odometry_information: true,
     
@@ -27,7 +29,8 @@ SegMapper: {
     publish_full_map: false,
     map_publication_rate_hz: 3,
     
-    add_vis_views: false,
+    add_vis_views: true,
+    loam_transform: false,
   },
  
   # SegMatchWorker parameters
@@ -112,7 +115,7 @@ SegMapper: {
 
     LaserTrack: {
       odometry_noise_model: [0.5, 0.5, 0.5, 0.015, 0.015, 0.015],
-      icp_noise_model: [0.5, 0.05, 0.05, 0.015, 0.015, 0.015],
+      icp_noise_model: [0.05, 0.05, 0.05, 0.015, 0.015, 0.015],
       add_m_estimator_on_odom: false,
       add_m_estimator_on_icp: false,
     

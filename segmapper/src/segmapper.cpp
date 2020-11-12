@@ -219,30 +219,56 @@ void SegMapper::segMatchThread() {
       }
     } else {
       RelativePose loop_closure;
-
+      PairwiseMatches filtered_matches;
       // If there is a loop closure.
       if (segmatch_worker_.processLocalMap(local_maps_[track_id], current_pose,
-                                           track_id, &loop_closure)) {
+                                           track_id, &loop_closure, &filtered_matches)) {
         BENCHMARK_BLOCK("SM.ProcessLoopClosure");
         LOG(INFO)<< "Found loop closure! track_id_a: " << loop_closure.track_id_a <<
             " time_a_ns: " << loop_closure.time_a_ns <<
             " track_id_b: " << loop_closure.track_id_b <<
             " time_b_ns: " << loop_closure.time_b_ns;
 
-        {
+        if (params_.export_loop_closures) {
           SE3 w_T_a_b = loop_closure.T_a_b;
           SE3 T_w_a = incremental_estimator_->getLaserTrack(loop_closure.track_id_a)->evaluate(loop_closure.time_a_ns);
           SE3 T_w_b = incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->evaluate(loop_closure.time_b_ns);
           SE3 a_T_a_b = T_w_a.inverse() * w_T_a_b * T_w_b;
 
+          if (true) {
+            // Get the initial guess.
+            laser_slam::PointMatcher::TransformationParameters initial_guess = a_T_a_b.getTransformationMatrix().cast<float>();
+
+            LOG(INFO) << "Creating the submaps for loop closure ICP.";
+            Clock clock;
+            DataPoints sub_map_a;
+            DataPoints sub_map_b;
+            incremental_estimator_->getLaserTrack(loop_closure.track_id_a)->buildSubMapAroundTime(
+                loop_closure.time_a_ns, 3, &sub_map_a);
+            incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->buildSubMapAroundTime(
+                loop_closure.time_b_ns, 3, &sub_map_b);
+            clock.takeTime();
+            LOG(INFO) << "Took " << clock.getRealTime() << " ms to create loop closures sub maps.";
+
+            LOG(INFO) << "Creating loop closure ICP.";
+            clock.start();
+            laser_slam::PointMatcher::TransformationParameters icp_solution =
+                incremental_estimator_->getIcp().compute(sub_map_b, sub_map_a, initial_guess);
+            clock.takeTime();
+            LOG(INFO) << "Took " << clock.getRealTime() <<
+                      " ms to compute the icp_solution for the loop closure.";
+
+            a_T_a_b = convertTransformationMatrixToSE3(icp_solution);
+          }
+
           // hack for loam results
-          {
-            // rotation from loam to segmap
-            Eigen::Matrix3d R;
-            R << 0, -1, 0,
-                 0, 0, 1,
-                 -1, 0, 0;
-            Eigen::Quaterniond q(R);
+          // rotation from loam to segmap
+          Eigen::Matrix3d R_l_s;
+          R_l_s << 0, -1, 0,
+                   0, 0, 1,
+                  -1, 0, 0;
+          if (laser_slam_worker_params_.loam_transform) {
+            Eigen::Quaterniond q(R_l_s);
             SE3 T(q, Eigen::Vector3d::Zero());
             a_T_a_b = T * a_T_a_b * T.inverse();
           }
@@ -257,6 +283,24 @@ void SegMapper::segMatchThread() {
                            << a_T_a_b.asVector()(2) << " "
                            << a_T_a_b.asVector()(3) << " "
                            << a_T_a_b.asVector()(0) << std::endl;
+          loopClosuresFile << filtered_matches.size() << std::endl;
+          // LOG(INFO) << std::endl << loop_closure.T_a_b.getTransformationMatrix();
+          for (int m = 0; m < filtered_matches.size(); ++m) {
+            Eigen::Vector3d pt_a = T_w_a.inverse() * filtered_matches[m].centroids_.second.getVector3fMap().cast<double>();
+            Eigen::Vector3d pt_b = T_w_b.inverse() * filtered_matches[m].centroids_.first.getVector3fMap().cast<double>();
+            if (laser_slam_worker_params_.loam_transform) {
+              pt_a = R_l_s * pt_a;
+              pt_b = R_l_s * pt_b;
+            }
+
+
+            // LOG(INFO) << "pt_aa = " << filtered_matches[m].centroids_.second.getVector3fMap().transpose();
+            // LOG(INFO) << "pt_bb = " << filtered_matches[m].centroids_.first.getVector3fMap().transpose();
+            // LOG(INFO) << "pt_ba = " << ((Eigen::Vector3d)(loop_closure.T_a_b * filtered_matches[m].centroids_.first.getVector3fMap().cast<double>())).transpose();
+            loopClosuresFile << (filtered_matches[m].features1_ - filtered_matches[m].features2_).norm() << " "
+                             << pt_a.x() << " " << pt_a.y() << " " << pt_a.z() << " "
+                             << pt_b.x() << " " << pt_b.y() << " " << pt_b.z() << std::endl;
+          }
         }
 
         // Prevent the workers to process further scans (and add variables to the graph).
@@ -403,6 +447,9 @@ void SegMapper::getParameters() {
 
   nh_.getParam(ns + "/clear_local_map_after_loop_closure",
                params_.clear_local_map_after_loop_closure);
+
+  nh_.getParam(ns + "/export_loop_closures",
+               params_.export_loop_closures);
 
   // laser_slam worker parameters.
   laser_slam_worker_params_ = laser_slam_ros::getLaserSlamWorkerParams(nh_, ns);

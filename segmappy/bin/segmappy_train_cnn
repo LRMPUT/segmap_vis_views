@@ -13,6 +13,7 @@ from segmappy.tools.classifiertools import get_default_dataset, get_default_prep
 from segmappy.tools.roccurve import get_roc_pairs, get_roc_curve
 from segmappy.models.model_groups_tf import init_model
 from segmappy.tools.heatmap import plot_heatmap_img
+from segmappy.tools.heatmap import plot_heatmap_vox
 
 # read config file
 configfile = "default_training.ini"
@@ -302,9 +303,13 @@ descriptor = cnn_graph.get_tensor_by_name("OutputScope/descriptor_read:0")
 roc_auc = cnn_graph.get_tensor_by_name("roc_auc:0")
 
 #visualization
+conv = cnn_graph.get_tensor_by_name("conv3_out:0")
 conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
 conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
 img_heatmap = cnn_graph.get_tensor_by_name("img_heatmap:0")
+img_heatmap_vis = cnn_graph.get_tensor_by_name("img_heatmap_vis:0")
+score = cnn_graph.get_tensor_by_name("score:0")
+score_vis = cnn_graph.get_tensor_by_name("score_vis:0")
 
 global_step = cnn_graph.get_tensor_by_name("global_step:0")
 update_step = cnn_graph.get_tensor_by_name("update_step:0")
@@ -313,6 +318,7 @@ train_op = cnn_graph.get_operation_by_name("train_op")
 summary_batch = tf.summary.merge_all("summary_batch")
 summary_epoch = tf.summary.merge_all("summary_epoch")
 summary_heatmap = tf.summary.merge_all("summary_heatmap")
+summary_heatmap_vis = tf.summary.merge_all("summary_heatmap_vis")
 
 # os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
@@ -396,8 +402,8 @@ with tf.Session(config=config_tf) as sess:
 
                 # calculate test loss and accuracy
                 [summary, batch_loss, batch_loss_c, batch_loss_r,
-                 batch_accuracy, batch_prob, batch_conv_vis, batch_descriptor] = sess.run(
-                    [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv_vis, descriptor],
+                 batch_accuracy, batch_prob, batch_conv, batch_conv_vis, batch_descriptor] = sess.run(
+                    [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv, conv_vis, descriptor],
                     feed_dict={
                         cnn_input: batch_segments,
                         cnn_input_vis: batch_vis_views,
@@ -415,7 +421,7 @@ with tf.Session(config=config_tf) as sess:
 
                 if test_step == gen_test.n_batches - 1:
                 # if True:
-                    img_heatmap_np = plot_heatmap_img(batch_segments,
+                    img_heatmap_vis_np, scores_vis = plot_heatmap_img(batch_segments,
                                                       batch_vis_views,
                                                       batch_classes,
                                                       preprocessor.last_scales,
@@ -428,7 +434,26 @@ with tf.Session(config=config_tf) as sess:
                                                       y_true,
                                                       scales)
 
-                    summary = sess.run(summary_heatmap, feed_dict={img_heatmap: img_heatmap_np})
+                    # img_heatmap_np, scores = plot_heatmap_vox(batch_segments,
+                    #                                   batch_vis_views,
+                    #                                   batch_classes,
+                    #                                   preprocessor.last_scales,
+                    #                                   batch_conv,
+                    #                                   batch_descriptor,
+                    #                                   sess,
+                    #                                   descriptor,
+                    #                                   cnn_input,
+                    #                                   cnn_input_vis,
+                    #                                   y_true,
+                    #                                   scales,
+                    #                                   480, 640)
+
+                    # summary = sess.run(summary_heatmap, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                    #                                                img_heatmap: img_heatmap_np,
+                    #                                                score: scores,
+                    #                                                score_vis: scores_vis})
+                    summary = sess.run(summary_heatmap_vis, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                                                                       score_vis: scores_vis})
                     test_writer.add_summary(summary, sess.run(global_step))
                     test_writer.flush()
 

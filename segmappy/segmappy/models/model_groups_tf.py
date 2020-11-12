@@ -62,6 +62,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         name="conv5",
     )
 
+    conv3_out = tf.identity(conv3, name='conv3_out')
+
     if vis_views:
         # visual view convolution
         conv1_vis = tf.layers.conv2d(
@@ -155,8 +157,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     flatten_vol = tf.contrib.layers.flatten(inputs=conv3)
     if vis_views:
         flatten_vis = tf.contrib.layers.flatten(inputs=conv5_vis_out)
-        # flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
-        flatten = tf.concat([flatten_vis], axis=1, name="flatten")
+        flatten = tf.concat([flatten_vol, flatten_vis, scales], axis=1, name="flatten")
+        # flatten = tf.concat([flatten_vis], axis=1, name="flatten")
     else:
         flatten = tf.concat([flatten_vol, scales], axis=1, name="flatten")
 
@@ -274,8 +276,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     # training
     LOSS_R_WEIGHT = 200
     LOSS_C_WEIGHT = 1
-    # loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
-    loss = tf.add(LOSS_C_WEIGHT * loss_c, 0, name="loss")
+    loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
+    # loss = tf.add(LOSS_C_WEIGHT * loss_c, 0, name="loss")
 
     global_step = tf.Variable(0, trainable=False, name="global_step")
     update_step = tf.assign(
@@ -302,7 +304,10 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
 
     roc_auc = tf.placeholder(dtype=tf.float32, shape=(), name="roc_auc")
 
-    img_heatmap = tf.placeholder(dtype=tf.uint8, shape=(None,) + input_shape_vis + (3,), name="img_heatmap")
+    img_heatmap = tf.placeholder(dtype=tf.uint8, shape=(None,) + (None, None) + (3,), name="img_heatmap")
+    img_heatmap_vis = tf.placeholder(dtype=tf.uint8, shape=(None,) + input_shape_vis + (3,), name="img_heatmap_vis")
+    score = tf.placeholder(dtype=tf.float32, shape=(None,), name="score")
+    score_vis = tf.placeholder(dtype=tf.float32, shape=(None,), name="score_vis")
 
     with tf.name_scope("summary"):
         tf.summary.scalar("loss", loss, collections=["summary_batch"])
@@ -311,5 +316,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         tf.summary.scalar("accuracy", accuracy, collections=["summary_batch"])
 
         tf.summary.image('heatmap', img_heatmap, collections=["summary_heatmap"], max_outputs=8)
+        tf.summary.image('heatmap_vis', img_heatmap_vis, collections=["summary_heatmap", "summary_heatmap_vis"], max_outputs=8)
+        tf.summary.text('score', tf.strings.as_string(score), collections=["summary_heatmap"])
+        tf.summary.text('score_vis', tf.strings.as_string(score_vis), collections=["summary_heatmap", "summary_heatmap_vis"])
 
         tf.summary.scalar("roc_auc", roc_auc, collections=["summary_epoch"])

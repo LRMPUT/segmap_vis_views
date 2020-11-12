@@ -223,7 +223,10 @@ bool exportView(const std::string &dir,
   cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
   for (int r = 0; r < intensity.rows(); ++r) {
     for (int c = 0; c < intensity.cols(); ++c) {
-      intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+      // KITTI
+      intensityMat.at<uint16_t>(r, c) = intensity(r, c)*65535.0f;
+      // MulRan
+      // intensityMat.at<uint16_t>(r, c) = intensity(r, c);
       // intensityMono.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
       // up to 65.535 * 2 m
       rangeMat.at<uint16_t>(r, c) = std::min(range(r, c) * 500.0f, 65535.0f);
@@ -293,19 +296,28 @@ bool exportVisualViews(const std::string& dir,
 
           int vis_view_idx = -1;
           for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
-            // cout << vis_views[i].getTime() << endl;
+            // cout << vis_views[vis_i].getTime() << endl;
             // there should be always visual view for the view
             if (vis_views[vis_i].getTime() == segment.views[i].timestamp_ns) {
               vis_view_idx = vis_i;
               break;
             }
           }
-          CHECK_GE(vis_view_idx, 0);
+          // if (vis_view_idx < 0) {
+          //   cout << segment.views[i].timestamp_ns << endl;
+          //   for (int vis_i = 0; vis_i < vis_views.size(); ++vis_i) {
+          //     cout << vis_views[vis_i].getTime() << endl;
+          //   }
+          // }
+          // TODO Check why it fails on KITTI
+          // CHECK_GE(vis_view_idx, 0);
 
-          laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
-          cur_view.decompress();
-          // LOG(INFO) << "Exporting " << segment.segment_id << " " << i << " " << vis_view_idx;
-          exportView(segmentDir, segment.segment_id, i, segment.views[i], cur_view);
+          if (vis_view_idx >= 0) {
+            laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
+            cur_view.decompress();
+            // LOG(INFO) << "Exporting " << segment.segment_id << " " << i << " " << vis_view_idx;
+            exportView(segmentDir, segment.segment_id, i, segment.views[i], cur_view);
+          }
         }
       }
       else {

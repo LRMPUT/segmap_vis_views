@@ -5,6 +5,9 @@ def get_segmap_home_dir():
     # segmap_home = os.path.abspath(
     #     os.path.join(os.path.expanduser("~"), ".segmap/")
     # )
+    # segmap_home = '/media/janw/JanW/datasets/JW/KITTI/segmap'
+    # segmap_home = '/mnt/data/datasets/JW/KITTI/segmap'
+    # segmap_home = '/media/janw/JanW/datasets/JW/MulRan/segmap'
     segmap_home = '/mnt/data/datasets/JW/MulRan/segmap'
 
     # If home directory doesn't exist create

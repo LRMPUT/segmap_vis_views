@@ -31,6 +31,8 @@ struct SegMapperParams {
 
   // Trajectory estimator parameters.
   laser_slam::EstimatorParams online_estimator_params;
+
+  bool export_loop_closures;
 }; // struct SegMapperParams
 
 class SegMapper {

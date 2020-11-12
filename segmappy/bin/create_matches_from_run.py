@@ -14,13 +14,13 @@ from segmappy.tools.hull import point_in_hull, n_points_in_hull, are_in_hull
 from segmappy.core.config import get_default_dataset_dir
 
 
-DATASET_FOLDER = "KAIST01"
+DATASET_FOLDER = "05"
 FILE_PATH = os.path.join(get_default_dataset_dir(), DATASET_FOLDER + "/matches_database.csv")
 if os.path.isfile(FILE_PATH):
     os.remove(FILE_PATH)
 
 dataset = Dataset(folder=DATASET_FOLDER, use_matches=False, normalize_classes=False)
-segments, _, ids, n_ids, features, matches, labels_dict, _, _ = dataset.load()
+segments, _, ids, n_ids, features, matches, labels_dict, _, _, _ = dataset.load()
 
 filtered_segments = []
 filtered_ids = []
