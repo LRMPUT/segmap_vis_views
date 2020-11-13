@@ -305,7 +305,7 @@ roc_auc = cnn_graph.get_tensor_by_name("roc_auc:0")
 #visualization
 conv = cnn_graph.get_tensor_by_name("conv3_out:0")
 conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
-conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
+# conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
 img_heatmap = cnn_graph.get_tensor_by_name("img_heatmap:0")
 img_heatmap_vis = cnn_graph.get_tensor_by_name("img_heatmap_vis:0")
 score = cnn_graph.get_tensor_by_name("score:0")
@@ -419,43 +419,43 @@ with tf.Session(config=config_tf) as sess:
                 if config.log_name:
                     test_writer.add_summary(summary, sess.run(global_step))
 
-                if test_step == gen_test.n_batches - 1:
-                # if True:
-                    img_heatmap_vis_np, scores_vis = plot_heatmap_img(batch_segments,
-                                                      batch_vis_views,
-                                                      batch_classes,
-                                                      preprocessor.last_scales,
-                                                      batch_conv_vis,
-                                                      batch_descriptor,
-                                                      sess,
-                                                      descriptor,
-                                                      cnn_input,
-                                                      cnn_input_vis,
-                                                      y_true,
-                                                      scales)
-
-                    # img_heatmap_np, scores = plot_heatmap_vox(batch_segments,
-                    #                                   batch_vis_views,
-                    #                                   batch_classes,
-                    #                                   preprocessor.last_scales,
-                    #                                   batch_conv,
-                    #                                   batch_descriptor,
-                    #                                   sess,
-                    #                                   descriptor,
-                    #                                   cnn_input,
-                    #                                   cnn_input_vis,
-                    #                                   y_true,
-                    #                                   scales,
-                    #                                   480, 640)
-
-                    # summary = sess.run(summary_heatmap, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
-                    #                                                img_heatmap: img_heatmap_np,
-                    #                                                score: scores,
-                    #                                                score_vis: scores_vis})
-                    summary = sess.run(summary_heatmap_vis, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
-                                                                       score_vis: scores_vis})
-                    test_writer.add_summary(summary, sess.run(global_step))
-                    test_writer.flush()
+                # if test_step == gen_test.n_batches - 1:
+                # # if True:
+                #     img_heatmap_vis_np, scores_vis = plot_heatmap_img(batch_segments,
+                #                                       batch_vis_views,
+                #                                       batch_classes,
+                #                                       preprocessor.last_scales,
+                #                                       batch_conv_vis,
+                #                                       batch_descriptor,
+                #                                       sess,
+                #                                       descriptor,
+                #                                       cnn_input,
+                #                                       cnn_input_vis,
+                #                                       y_true,
+                #                                       scales)
+                #
+                #     # img_heatmap_np, scores = plot_heatmap_vox(batch_segments,
+                #     #                                   batch_vis_views,
+                #     #                                   batch_classes,
+                #     #                                   preprocessor.last_scales,
+                #     #                                   batch_conv,
+                #     #                                   batch_descriptor,
+                #     #                                   sess,
+                #     #                                   descriptor,
+                #     #                                   cnn_input,
+                #     #                                   cnn_input_vis,
+                #     #                                   y_true,
+                #     #                                   scales,
+                #     #                                   480, 640)
+                #
+                #     # summary = sess.run(summary_heatmap, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                #     #                                                img_heatmap: img_heatmap_np,
+                #     #                                                score: scores,
+                #     #                                                score_vis: scores_vis})
+                #     summary = sess.run(summary_heatmap_vis, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                #                                                        score_vis: scores_vis})
+                #     test_writer.add_summary(summary, sess.run(global_step))
+                #     test_writer.flush()
 
                 test_loss += batch_loss
                 test_loss_c += batch_loss_c

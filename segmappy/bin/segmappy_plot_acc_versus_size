@@ -30,7 +30,7 @@ config.ae_model = args.ae_model
 dataset = Dataset(
     folder=config.cnn_test_folder,
     base_dir=config.base_dir,
-    keep_match_thresh=0.7
+    keep_match_thresh=0.7,
     # largest_vis_view=True
 )
 

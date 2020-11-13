@@ -60,7 +60,7 @@ class Dataset(object):
         self.duplicate_ids = np.array(duplicate_sids)
 
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
-        self._remove_no_vis(complete_id_to_vidx)
+        # self._remove_no_vis(complete_id_to_vidx)
 
         vorder = [complete_id_to_vidx[csid] for csid in zip(self.classes, self.duplicate_ids)]
         self.int_paths = [self.int_paths[idx] for idx in vorder]

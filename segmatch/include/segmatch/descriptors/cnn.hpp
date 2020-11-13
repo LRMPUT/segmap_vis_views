@@ -79,6 +79,10 @@ class CNNDescriptor : public Descriptor {
   constexpr static unsigned int n_voxels_z_dim_ = 16u;
   constexpr static unsigned int cnn_input_dim_ = n_voxels_x_dim_ * n_voxels_y_dim_ *
       n_voxels_z_dim_;
+
+  constexpr static unsigned int n_vis_h_dim_ = 64u;
+  constexpr static unsigned int n_vis_w_dim_ = 1024u;
+  constexpr static unsigned int n_vis_c_dim_ = 3u;
       
   constexpr static float min_x_scale_m_ = static_cast<float>(n_voxels_x_dim_) * min_voxel_size_m_;
   constexpr static float min_y_scale_m_ = static_cast<float>(n_voxels_y_dim_) * min_voxel_size_m_;
@@ -93,6 +97,7 @@ class CNNDescriptor : public Descriptor {
   constexpr static bool save_debug_data_ = true;
 
   const std::string kInputTensorName = "InputScope/input";
+  const std::string kInputVisTensorName = "InputScope/input_vis";
   const std::string kFeaturesTensorName = "OutputScope/descriptor_read";
   const std::string kSemanticsOutputName = "OutputScope/output_read";
   const std::string kReconstructionTensorName = "ReconstructionScopeAE/ae_reconstruction_read";

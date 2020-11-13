@@ -341,6 +341,16 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
     // else {
     //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
     // }
+    if (!view.isCompressed()) {
+      for (auto &segment : valid_segments_) {
+        laser_slam_ros::VisualView::MatrixInt mask = view.getMask(segment.second.getLastView().point_cloud);
+        int cnt = (mask.array() > 0).count();
+        if (cnt > segment.second.bestViewPts) {
+          segment.second.bestViewPts = cnt;
+          segment.second.bestViewTs = view.getTime();
+        }
+      }
+    }
   }
   // LOG(INFO) << "SegmentedCloud vis views = " << vis_views_.size();
 }

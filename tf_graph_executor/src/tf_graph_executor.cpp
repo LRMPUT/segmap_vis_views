@@ -270,6 +270,120 @@ void TensorflowGraphExecutor::batchFullForwardPass(
   }
 }
 
+void TensorflowGraphExecutor::batchFullForwardPassVisViews(
+        const std::vector<Array3D>& inputs,
+        const std::string& input_tensor_name,
+        const std::vector<Array3D>& inputs_vis,
+        const std::string& input_vis_tensor_name,
+        const std::vector<std::vector<float> >& scales,
+        const std::string& scales_tensor_name,
+        const std::string& descriptor_values_name,
+        const std::string& reconstruction_values_name,
+        std::vector<std::vector<float> >& descriptors,
+        std::vector<Array3D>& reconstructions) const {
+    CHECK(!inputs.empty());
+    descriptors.clear();
+    reconstructions.clear();
+
+    // define the input placeholder
+    auto inputShape = TensorShape();
+    inputShape.AddDim((int64) inputs.size());
+    inputShape.AddDim((int64) inputs[0].container.size());
+    inputShape.AddDim((int64) inputs[0].container[0].size());
+    inputShape.AddDim((int64) inputs[0].container[0][0].size());
+    inputShape.AddDim((int64) 1u);
+    Tensor inputTensor(DT_FLOAT, inputShape);
+
+    // put values in the input tensor
+    auto inputTensorValues = inputTensor.tensor<float, 5>();
+    for (size_t i=0; i < inputs.size(); i++) {
+        for (size_t j=0; j < inputs[0].container.size(); j++) {
+            for (size_t k=0; k < inputs[0].container[0].size(); k++) {
+                for (size_t l=0; l < inputs[0].container[0][0].size(); l++) {
+                    inputTensorValues(i, j, k, l, 0) = inputs[i].container[j][k][l];
+                }
+            }
+        }
+    }
+
+    // define the input vis placeholder
+    auto inputVisShape = TensorShape();
+    inputShape.AddDim((int64) inputs.size());
+    inputShape.AddDim((int64) inputs_vis[0].container.size());
+    inputShape.AddDim((int64) inputs_vis[0].container[0].size());
+    inputShape.AddDim((int64) inputs_vis[0].container[0][0].size());
+    Tensor inputVisTensor(DT_FLOAT, inputVisShape);
+
+    // put values in the input tensor
+    auto inputVisTensorValues = inputVisTensor.tensor<float, 4>();
+    for (size_t i=0; i < inputs_vis.size(); i++) {
+        for (size_t j=0; j < inputs_vis[0].container.size(); j++) {
+            for (size_t k=0; k < inputs_vis[0].container[0].size(); k++) {
+                for (size_t l=0; l < inputs_vis[0].container[0][0].size(); l++) {
+                    inputVisTensorValues(i, j, k, l) = inputs_vis[i].container[j][k][l];
+                }
+            }
+        }
+    }
+
+    auto scales_shape = TensorShape();
+    scales_shape.AddDim((int64) inputs.size());
+    scales_shape.AddDim(3u);
+    //scales_shape.AddDim(1u);
+    Tensor scales_tensor(DT_FLOAT, scales_shape);
+
+    // put values in the input tensor
+    auto scales_tensor_values = scales_tensor.tensor<float, 2>();
+    for (size_t i=0; i < scales.size(); i++) {
+        for (size_t j=0; j < scales[0].size(); j++) {
+            scales_tensor_values(i, j) = scales[i][j];
+        }
+    }
+
+    std::vector<Tensor> output_tensors;
+    Status status = this->executeGraph(
+            {{input_tensor_name, inputTensor},
+             {input_vis_tensor_name, inputVisTensor},
+             {scales_tensor_name, scales_tensor}},
+            {descriptor_values_name, reconstruction_values_name},
+            output_tensors);
+
+    if (!status.ok()) {
+        LOG(INFO) << status.error_message();
+    }
+    CHECK(status.ok());
+    CHECK_EQ(output_tensors.size(), 2u);
+
+    auto descriptor_values = output_tensors[0].tensor<float, 2>();
+    auto reconstruction_values = output_tensors[1].tensor<float, 5>();
+
+    CHECK_EQ(descriptor_values.dimension(0), reconstruction_values.dimension(0));
+    CHECK_EQ(descriptor_values.dimension(0), inputs.size());
+
+    const unsigned int batch_size =  inputs.size();
+    std::vector<float> descriptor;
+    Array3D reconstruction(inputs[0].container.size(),
+                           inputs[0].container[0].size(),
+                           inputs[0].container[0][0].size());
+    for (unsigned int i = 0u; i < batch_size; ++i) {
+        descriptor.clear();
+        for (int j = 0; j < descriptor_values.dimension(1); j++) {
+            descriptor.push_back(descriptor_values(i, j));
+        }
+
+        for (size_t j=0; j < inputs[0].container.size(); j++) {
+            for (size_t k=0; k < inputs[0].container[0].size(); k++) {
+                for (size_t l=0; l < inputs[0].container[0][0].size(); l++) {
+                    reconstruction.container[j][k][l] = reconstruction_values(i, j, k, l, 0);
+                }
+            }
+        }
+
+        descriptors.push_back(descriptor);
+        reconstructions.push_back(reconstruction);
+    }
+}
+
 tensorflow::Status TensorflowGraphExecutor::executeGraph(
     const Tensor& inputTensor, Tensor& outputTensor, const std::string& input_tensor_name,
     const std::string& output_tensor_name) const {

@@ -291,11 +291,6 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
     with tf.control_dependencies(update_ops):
         train_op = optimizer.minimize(loss, name="train_op")
 
-    # visualization
-    descriptor_len = tf.linalg.norm(descriptor, name='descriptor_len')
-    conv5_vis_grad = tf.gradients(descriptor_len, conv5_vis_out, name='conv5_vis_grad')
-    conv5_vis_grad_out = tf.identity(conv5_vis_out, name='conv5_vis_grad_out')
-
     # statistics
     y_prob = tf.nn.softmax(y_pred, name="y_prob")
 

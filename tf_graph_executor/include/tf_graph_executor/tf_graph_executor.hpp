@@ -77,6 +77,18 @@ public:
         std::vector<std::vector<float> >& descriptors,
         std::vector<Array3D>& reconstructions) const;
 
+    void batchFullForwardPassVisViews(
+            const std::vector<Array3D>& inputs,
+            const std::string& input_tensor_name,
+            const std::vector<Array3D>& inputs_vis,
+            const std::string& input_vis_tensor_name,
+            const std::vector<std::vector<float> >& scales,
+            const std::string& scales_tensor_name,
+            const std::string& descriptor_tensor_name,
+            const std::string& reconstruction_tensor_name,
+            std::vector<std::vector<float> >& descriptors,
+            std::vector<Array3D>& reconstructions) const;
+
     tensorflow::Status executeGraph(const tensorflow::Tensor& inputTensor,
                                     tensorflow::Tensor& outputTensor,
                                     const std::string& input_tensor_name,

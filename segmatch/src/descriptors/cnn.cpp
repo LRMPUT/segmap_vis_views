@@ -45,6 +45,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                          segmented_cloud_ptr->getNumberOfValidSegments());
 
   std::vector<tf_graph_executor::Array3D> batch_nn_input;
+  std::vector<tf_graph_executor::Array3D> batch_nn_input_vis;
   std::vector<Id> described_segment_ids;
   std::vector<PclPoint> scales;
   std::vector<PclPoint> thresholded_scales;
@@ -180,6 +181,47 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
     it->second.getLastView().n_points_when_last_described = num_points;
 
     batch_nn_input.push_back(nn_input);
+
+    tf_graph_executor::Array3D nn_input_vis(n_vis_h_dim_, n_vis_w_dim_, n_vis_c_dim_);
+
+    if (params_.use_vis_views) {
+      const auto &visViews = segmented_cloud_ptr->getVisViews();
+
+      int bestV = -1;
+      for (int v = 0; v < visViews.size(); ++v) {
+        if (it->second.bestViewTs == visViews[v].getTime()) {
+          bestV = v;
+          break;
+        }
+      }
+      CHECK_GE(bestV, 0);
+      // Could be precomputed, but would need extra memory
+      laser_slam_ros::VisualView::MatrixInt mask = visViews[bestV].getMask(it->second.getLastView().point_cloud);
+      const laser_slam_ros::VisualView::Matrix &intensity = visViews[bestV].getIntensity();
+      const laser_slam_ros::VisualView::Matrix &range = visViews[bestV].getRange();
+      float meanMaskRange = 0.0f;
+      int maskRangeCnt = 0;
+      for (int r = 0; r < n_vis_h_dim_; ++r) {
+        for (int c = 0; c < n_vis_w_dim_; ++c) {
+          if (mask(r, c) > 0) {
+            meanMaskRange += range(r, c);
+            maskRangeCnt += 1;
+          }
+        }
+      }
+      CHECK_GE(maskRangeCnt, 0);
+      meanMaskRange /= maskRangeCnt;
+      for (int r = 0; r < n_vis_h_dim_; ++r) {
+        for (int c = 0; c < n_vis_w_dim_; ++c) {
+          // MulRan
+          nn_input_vis.container[r][c][0] = (intensity(r, c) - 209.30) / 173.09;
+          nn_input_vis.container[r][c][1] = mask(r, c);
+          nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) / (7632.0 / 500.0);
+        }
+      }
+    }
+
+    batch_nn_input_vis.push_back(nn_input_vis);
   }
   BENCHMARK_RECORD_VALUE("SM.Worker.Describe.NumSegmentsDescribed",
                          batch_nn_input.size());
@@ -191,33 +233,63 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
     std::vector<tf_graph_executor::Array3D> reconstructions;
     std::vector<std::vector<float> > semantics;
     if (batch_nn_input.size() < mini_batch_size_) {
-      graph_executor_->batchFullForwardPass(batch_nn_input,
-                                            kInputTensorName,
-                                            scales_as_vectors,
-                                            kScalesTensorName,
-                                            kFeaturesTensorName,
-                                            kReconstructionTensorName,
-                                            cnn_descriptors,
-                                            reconstructions);
+      if (!params_.use_vis_views) {
+        graph_executor_->batchFullForwardPass(batch_nn_input,
+                                              kInputTensorName,
+                                              scales_as_vectors,
+                                              kScalesTensorName,
+                                              kFeaturesTensorName,
+                                              kReconstructionTensorName,
+                                              cnn_descriptors,
+                                              reconstructions);
+      }
+      else {
+        graph_executor_->batchFullForwardPassVisViews(batch_nn_input,
+                                                      kInputTensorName,
+                                                      batch_nn_input_vis,
+                                                      kInputVisTensorName,
+                                                      scales_as_vectors,
+                                                      kScalesTensorName,
+                                                      kFeaturesTensorName,
+                                                      kReconstructionTensorName,
+                                                      cnn_descriptors,
+                                                      reconstructions);
+      }
 
     } else {
       std::vector<tf_graph_executor::Array3D> mini_batch;
+      std::vector<tf_graph_executor::Array3D> mini_batch_vis;
       std::vector<std::vector<float> > mini_batch_scales;
       for (size_t i = 0u; i < batch_nn_input.size(); ++i) {
         mini_batch.push_back(batch_nn_input[i]);
+        mini_batch_vis.push_back(batch_nn_input_vis[i]);
         mini_batch_scales.push_back(scales_as_vectors[i]);
         if (mini_batch.size() == mini_batch_size_) {
           std::vector<std::vector<float> > mini_batch_cnn_descriptors;
           std::vector<tf_graph_executor::Array3D> mini_batch_reconstructions;
 
-          graph_executor_->batchFullForwardPass(mini_batch,
-                                                kInputTensorName,
-                                                mini_batch_scales,
-                                                kScalesTensorName,
-                                                kFeaturesTensorName,
-                                                kReconstructionTensorName,
-                                                mini_batch_cnn_descriptors,
-                                                mini_batch_reconstructions);
+          if (!params_.use_vis_views) {
+            graph_executor_->batchFullForwardPass(mini_batch,
+                                                  kInputTensorName,
+                                                  mini_batch_scales,
+                                                  kScalesTensorName,
+                                                  kFeaturesTensorName,
+                                                  kReconstructionTensorName,
+                                                  mini_batch_cnn_descriptors,
+                                                  mini_batch_reconstructions);
+          }
+          else {
+            graph_executor_->batchFullForwardPassVisViews(mini_batch,
+                                                          kInputTensorName,
+                                                          mini_batch_vis,
+                                                          kInputVisTensorName,
+                                                          mini_batch_scales,
+                                                          kScalesTensorName,
+                                                          kFeaturesTensorName,
+                                                          kReconstructionTensorName,
+                                                          mini_batch_cnn_descriptors,
+                                                          mini_batch_reconstructions);
+          }
 
           cnn_descriptors.insert(cnn_descriptors.end(),
                                  mini_batch_cnn_descriptors.begin(),
@@ -233,14 +305,28 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
         std::vector<std::vector<float> > mini_batch_cnn_descriptors;
         std::vector<tf_graph_executor::Array3D> mini_batch_reconstructions;
 
-        graph_executor_->batchFullForwardPass(mini_batch,
-                                              kInputTensorName,
-                                              mini_batch_scales,
-                                              kScalesTensorName,
-                                              kFeaturesTensorName,
-                                              kReconstructionTensorName,
-                                              mini_batch_cnn_descriptors,
-                                              mini_batch_reconstructions);
+        if (!params_.use_vis_views) {
+          graph_executor_->batchFullForwardPass(mini_batch,
+                                                kInputTensorName,
+                                                mini_batch_scales,
+                                                kScalesTensorName,
+                                                kFeaturesTensorName,
+                                                kReconstructionTensorName,
+                                                mini_batch_cnn_descriptors,
+                                                mini_batch_reconstructions);
+        }
+        else {
+          graph_executor_->batchFullForwardPassVisViews(mini_batch,
+                                                        kInputTensorName,
+                                                        mini_batch_vis,
+                                                        kInputVisTensorName,
+                                                        mini_batch_scales,
+                                                        kScalesTensorName,
+                                                        kFeaturesTensorName,
+                                                        kReconstructionTensorName,
+                                                        mini_batch_cnn_descriptors,
+                                                        mini_batch_reconstructions);
+        }
 
         cnn_descriptors.insert(cnn_descriptors.end(),
                                mini_batch_cnn_descriptors.begin(),

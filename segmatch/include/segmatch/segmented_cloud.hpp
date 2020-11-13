@@ -73,6 +73,9 @@ struct Segment {
 
   laser_slam::Aligned<std::vector, SegmentView> views;
   unsigned int track_id;
+
+  laser_slam::Time bestViewTs = 0;
+  int bestViewPts = -1;
 };
 
 class SegmentedCloud {

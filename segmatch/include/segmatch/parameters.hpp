@@ -30,6 +30,8 @@ struct DescriptorsParameters {
   // CNN parameters.
   std::string cnn_model_path = "MUST_BE_SET";
   std::string semantics_nn_path = "MUST_BE_SET";
+
+  bool use_vis_views = true;
 }; // struct DescriptorsParameters
 
 struct SegmenterParameters {
