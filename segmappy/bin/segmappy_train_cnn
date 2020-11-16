@@ -304,12 +304,14 @@ roc_auc = cnn_graph.get_tensor_by_name("roc_auc:0")
 
 #visualization
 conv = cnn_graph.get_tensor_by_name("conv3_out:0")
-conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
 # conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
 img_heatmap = cnn_graph.get_tensor_by_name("img_heatmap:0")
-img_heatmap_vis = cnn_graph.get_tensor_by_name("img_heatmap_vis:0")
 score = cnn_graph.get_tensor_by_name("score:0")
-score_vis = cnn_graph.get_tensor_by_name("score_vis:0")
+if config.vis_views:
+    conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
+    img_heatmap_vis = cnn_graph.get_tensor_by_name("img_heatmap_vis:0")
+    score_vis = cnn_graph.get_tensor_by_name("score_vis:0")
+
 
 global_step = cnn_graph.get_tensor_by_name("global_step:0")
 update_step = cnn_graph.get_tensor_by_name("update_step:0")
@@ -401,16 +403,28 @@ with tf.Session(config=config_tf) as sess:
                 batch_segments, batch_classes, batch_vis_views = gen_test.next()
 
                 # calculate test loss and accuracy
-                [summary, batch_loss, batch_loss_c, batch_loss_r,
-                 batch_accuracy, batch_prob, batch_conv, batch_conv_vis, batch_descriptor] = sess.run(
-                    [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv, conv_vis, descriptor],
-                    feed_dict={
-                        cnn_input: batch_segments,
-                        cnn_input_vis: batch_vis_views,
-                        y_true: batch_classes,
-                        scales: preprocessor.last_scales,
-                    },
-                )
+                if config.vis_views:
+                    [summary, batch_loss, batch_loss_c, batch_loss_r,
+                     batch_accuracy, batch_prob, batch_conv, batch_conv_vis, batch_descriptor] = sess.run(
+                        [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv, conv_vis, descriptor],
+                        feed_dict={
+                            cnn_input: batch_segments,
+                            cnn_input_vis: batch_vis_views,
+                            y_true: batch_classes,
+                            scales: preprocessor.last_scales,
+                        },
+                    )
+                else:
+                    [summary, batch_loss, batch_loss_c, batch_loss_r,
+                     batch_accuracy, batch_prob, batch_conv, batch_descriptor] = sess.run(
+                        [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv, descriptor],
+                        feed_dict={
+                            cnn_input: batch_segments,
+                            cnn_input_vis: batch_vis_views,
+                            y_true: batch_classes,
+                            scales: preprocessor.last_scales,
+                        },
+                    )
 
                 if config.debug:
                     for i, segment_id in enumerate(gen_test.batch_ids):
