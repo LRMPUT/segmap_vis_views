@@ -45,6 +45,8 @@ class Dataset(object):
     def load(self, preprocessor=None):
         from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views
 
+        print("Loading dataset from folder", self.folder)
+
         # load all the csv files
         self.segments, sids, duplicate_sids = load_segments(folder=self.folder)
         self.positions, pids, duplicate_pids = load_positions(folder=self.folder)
@@ -53,25 +55,19 @@ class Dataset(object):
         )
         self.int_paths, self.mask_paths, self.range_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
 
-        self.classes = np.array(sids)
-        self.duplicate_classes = self.classes.copy()
-        self.positions = np.array(self.positions)
-        self.features = np.array(self.features)
-        self.duplicate_ids = np.array(duplicate_sids)
-
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
-        # self._remove_no_vis(complete_id_to_vidx)
-
-        vorder = [complete_id_to_vidx[csid] for csid in zip(self.classes, self.duplicate_ids)]
+        vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
         self.int_paths = [self.int_paths[idx] for idx in vorder]
         self.mask_paths = [self.mask_paths[idx] for idx in vorder]
         self.range_paths = [self.range_paths[idx] for idx in vorder]
         vids = [vids[idx] for idx in vorder]
         duplicate_vids = [duplicate_vids[idx] for idx in vorder]
 
-        for i in range(len(vids)):
-            if (vids[i], duplicate_vids[i]) != (self.classes[i], self.duplicate_ids[i]):
-                raise Exception('Error: ', (vids[i], duplicate_vids[i]), (self.classes[i], self.duplicate_ids[i]))
+        self.classes = np.array(sids)
+        self.duplicate_classes = self.classes.copy()
+        self.positions = np.array(self.positions)
+        self.features = np.array(self.features)
+        self.duplicate_ids = np.array(duplicate_sids)
 
         # load labels
         from ..tools.import_export import load_labels
@@ -177,13 +173,12 @@ class Dataset(object):
             merge_ids = np.where(self.classes == merge_sequence)[0]
             target_ids = np.where(self.classes == target_sequence)[0]
 
-            if merge_ids.size > 0 and target_ids.size > 0:
-                self.classes[merge_ids] = target_sequence
-                self.duplicate_ids[target_ids] += merge_ids.size
+            self.classes[merge_ids] = target_sequence
+            self.duplicate_ids[target_ids] += merge_ids.size
 
-                subclasses[target_sequence].append(merge_sequence)
-                subclasses[target_sequence] += subclasses[merge_sequence]
-                del subclasses[merge_sequence]
+            subclasses[target_sequence].append(merge_sequence)
+            subclasses[target_sequence] += subclasses[merge_sequence]
+            del subclasses[merge_sequence]
 
         # calculate how relevant the merges are based on size
         relevant = {}
