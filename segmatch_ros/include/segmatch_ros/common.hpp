@@ -179,6 +179,8 @@ static segmatch::SegMatchParams getSegMatchParams(const ros::NodeHandle& nh,
               params.descriptors_params.cnn_model_path);
   nh.getParam(ns + "/Descriptors/semantics_nn_path",
               params.descriptors_params.semantics_nn_path);
+  nh.getParam(ns + "/Descriptors/use_vis_views",
+              params.descriptors_params.use_vis_views);
 
   // Segmenter parameters.
   nh.getParam(ns + "/Segmenters/segmenter_type",

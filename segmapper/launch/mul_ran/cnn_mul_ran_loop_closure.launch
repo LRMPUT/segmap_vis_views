@@ -22,7 +22,8 @@
   <node name="visualizer" pkg="rviz" type="rviz" output="screen" respawn="$(arg respawn_value)" args="-d $(arg rviz_config_file)" />
 
   <!-- CNN model path -->
-  <arg name="cnn_model_path" value="$(arg root_dir)/trained_models/segmap64/"/>
+  <!--<arg name="cnn_model_path" value="$(arg root_dir)/trained_models/segmap64/"/>-->
+  <arg name="cnn_model_path" value="/media/janw/JanW/datasets/JW/MulRan/segmap/trained_models/segmap64_w_vis_views/"/>
   <rosparam param="/SegMapper/SegMatchWorker/SegMatch/Descriptors/cnn_model_path" subst_value="True">$(arg cnn_model_path)</rosparam>
 
   <!-- Semantics nn path -->
@@ -36,6 +37,6 @@
   </include>
 
   <!-- rosbag player node -->
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -k -r 0.2 -s 0 --clock --pause $(arg bag_file)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -k -r 0.2 -s 13 --clock --pause $(arg bag_file)"/>
 
 </launch>

@@ -328,7 +328,7 @@ void SegmentedCloud::clearFarVisViews() {
 void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views) {
   // LOG(INFO) << "Adding new views";
 
-  curves::Time last_time_ns(0);
+  curves::Time last_time_ns(-1);
   if(!vis_views_.empty()){
     last_time_ns = vis_views_.back().getTime();
   }
@@ -342,9 +342,11 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
     //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
     // }
     if (!view.isCompressed()) {
+      // LOG(INFO) << "Checking if view with ts = " << view.getTime() << " is the best for some segment";
       for (auto &segment : valid_segments_) {
         laser_slam_ros::VisualView::MatrixInt mask = view.getMask(segment.second.getLastView().point_cloud);
         int cnt = (mask.array() > 0).count();
+        // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
         if (cnt > segment.second.bestViewPts) {
           segment.second.bestViewPts = cnt;
           segment.second.bestViewTs = view.getTime();

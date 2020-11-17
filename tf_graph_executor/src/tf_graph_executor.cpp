@@ -308,10 +308,10 @@ void TensorflowGraphExecutor::batchFullForwardPassVisViews(
 
     // define the input vis placeholder
     auto inputVisShape = TensorShape();
-    inputShape.AddDim((int64) inputs.size());
-    inputShape.AddDim((int64) inputs_vis[0].container.size());
-    inputShape.AddDim((int64) inputs_vis[0].container[0].size());
-    inputShape.AddDim((int64) inputs_vis[0].container[0][0].size());
+    inputVisShape.AddDim((int64) inputs.size());
+    inputVisShape.AddDim((int64) inputs_vis[0].container.size());
+    inputVisShape.AddDim((int64) inputs_vis[0].container[0].size());
+    inputVisShape.AddDim((int64) inputs_vis[0].container[0][0].size());
     Tensor inputVisTensor(DT_FLOAT, inputVisShape);
 
     // put values in the input tensor

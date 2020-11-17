@@ -310,7 +310,7 @@ bool exportVisualViews(const std::string& dir,
           //   }
           // }
           // TODO Check why it fails on KITTI
-          // CHECK_GE(vis_view_idx, 0);
+          CHECK_GE(vis_view_idx, 0);
 
           if (vis_view_idx >= 0) {
             laser_slam_ros::VisualView cur_view = vis_views[vis_view_idx];
