@@ -104,7 +104,7 @@ class Dataset(object):
         self._remove_poorly_visible()
 
         if self.largest_vis_view:
-            self._select_largest_vis_views(vids, duplicate_vids)
+            self._select_largest_vis_views()
 
         # combine classes based on matches
         if self.use_matches:
@@ -450,7 +450,7 @@ class Dataset(object):
         print('range mean: ', range_mean)
         print('range stddev: ', np.sqrt(range_var))
 
-    def _select_largest_vis_views(self, vids, duplicate_vids):
+    def _select_largest_vis_views(self):
         cvididxs = sorted(zip(self.classes, self.duplicate_ids, range(len(self.classes))))
 
         cid_to_idx = {}
@@ -465,6 +465,8 @@ class Dataset(object):
                 prev_id = id
 
             cur_mask = cv2.imread(self.mask_paths[idx], cv2.IMREAD_ANYDEPTH)
+            cur_mask = cv2.dilate(cur_mask, 5)
+            cur_mask = cv2.erode(cur_mask, 5)
             cur_size = np.nonzero(cur_mask)[0].size
             if cur_size > largest_size:
                 largest_size = cur_size

@@ -27,7 +27,7 @@
   <rosparam param="/SegMapper/SegMatchWorker/SegMatch/Descriptors/cnn_model_path" subst_value="True">$(arg cnn_model_path)</rosparam>
 
   <!-- Semantics nn path -->
-  <arg name="semantics_nn_path" value="$(arg root_dir)/trained_models/segmap64_semantics/"/>
+  <arg name="semantics_nn_path" value="/media/janw/JanW/datasets/JW/MulRan/segmap/trained_models/segmap64_semantics/"/>
   <rosparam param="/SegMapper/SegMatchWorker/SegMatch/Descriptors/semantics_nn_path" subst_value="True">$(arg semantics_nn_path)</rosparam>
 
   <!-- segmapper node -->
