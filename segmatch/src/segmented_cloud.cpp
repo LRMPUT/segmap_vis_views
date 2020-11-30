@@ -332,24 +332,32 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
   if(!vis_views_.empty()){
     last_time_ns = vis_views_.back().getTime();
   }
-  for(const auto &view : new_views) {
+  for(const auto &vis_view : new_views) {
     // it is a new view
-    if(last_time_ns < view.getTime()) {
+    if(last_time_ns < vis_view.getTime()) {
       // LOG(INFO) << "Adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
-      vis_views_.push_back(view);
+      vis_views_.push_back(vis_view);
     }
     // else {
     //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
     // }
-    if (!view.isCompressed()) {
+    if (!vis_view.isCompressed()) {
       // LOG(INFO) << "Checking if view with ts = " << view.getTime() << " is the best for some segment";
       for (auto &segment : valid_segments_) {
-        laser_slam_ros::VisualView::MatrixInt mask = view.getMask(segment.second.getLastView().point_cloud);
-        int cnt = (mask.array() > 0).count();
-        // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
-        if (cnt > segment.second.bestViewPts) {
-          segment.second.bestViewPts = cnt;
-          segment.second.bestViewTs = view.getTime();
+        bool wasVisible = false;
+        for (const auto &view : segment.second.views) {
+          if (view.timestamp_ns == vis_view.getTime()) {
+            wasVisible = true;
+          }
+        }
+        if (wasVisible) {
+          laser_slam_ros::VisualView::MatrixInt mask = vis_view.getMask(segment.second.getLastView().point_cloud);
+          int cnt = (mask.array() > 0).count();
+          // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
+          if (cnt > segment.second.bestViewPts) {
+            segment.second.bestViewPts = cnt;
+            segment.second.bestViewTs = vis_view.getTime();
+          }
         }
       }
     }

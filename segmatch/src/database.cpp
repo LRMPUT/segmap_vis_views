@@ -309,7 +309,7 @@ bool exportVisualViews(const std::string& dir,
           //     cout << vis_views[vis_i].getTime() << endl;
           //   }
           // }
-          // TODO Check why it fails on KITTI
+
           CHECK_GE(vis_view_idx, 0);
 
           if (vis_view_idx >= 0) {

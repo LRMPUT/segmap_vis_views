@@ -340,6 +340,7 @@ void TensorflowGraphExecutor::batchFullForwardPassVisViews(
         }
     }
 
+    LOG(INFO) << "Executing graph with vis views";
     std::vector<Tensor> output_tensors;
     Status status = this->executeGraph(
             {{input_tensor_name, inputTensor},
@@ -347,6 +348,7 @@ void TensorflowGraphExecutor::batchFullForwardPassVisViews(
              {scales_tensor_name, scales_tensor}},
             {descriptor_values_name, reconstruction_values_name},
             output_tensors);
+    LOG(INFO) << "Graph executed";
 
     if (!status.ok()) {
         LOG(INFO) << status.error_message();

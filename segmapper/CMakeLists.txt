@@ -14,7 +14,8 @@ cs_add_library(${PROJECT_NAME}
 )
 
 cs_add_executable(segmapper_node src/segmapper_node.cpp)
-target_link_libraries(segmapper_node /home/janw/anaconda3/envs/tf_gpu_python2/lib/libfreetype.so.6 fontconfig harfbuzz ${PROJECT_NAME})
+target_link_libraries(segmapper_node /opt/conda/lib/libfreetype.so.6 fontconfig harfbuzz ${PROJECT_NAME})
+#target_link_libraries(segmapper_node /home/janw/anaconda3/envs/tf_gpu_python2/lib/libfreetype.so.6 fontconfig harfbuzz ${PROJECT_NAME})
 #target_link_libraries(segmapper_node ${PROJECT_NAME})
 
 cs_install()

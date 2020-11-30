@@ -120,7 +120,8 @@ void SegMatch::transferSourceToTarget(unsigned int track_id,
   filterNearestSegmentsInCloud(segmented_target_cloud_, params_.centroid_distance_threshold_m,
                                5u);
 
-  classifier_->setTarget(segmented_target_cloud_);
+  // TODO Comment to speed up during dataset generation.
+  // classifier_->setTarget(segmented_target_cloud_);
 }
 
 void SegMatch::processCloud(MapCloud& cloud,
