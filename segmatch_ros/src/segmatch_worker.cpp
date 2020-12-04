@@ -143,13 +143,7 @@ bool SegMatchWorker::processLocalMap(
 
     if (params_.export_segments_and_matches) {
       BENCHMARK_BLOCK("SM.Worker.ExportSegments");
-
-      auto newCloud = segmatch_.getSourceAsSegmentedCloud(track_id);
-      // LOG(INFO) << "segments_database_ vis views = " << visViews.size();
-      for(auto &view : newCloud.getVisViews()) {
-        view.compress();
-      }
-      segments_database_ += newCloud;
+      segments_database_.addSegmentedCloudAndCompress(segmatch_.getSourceAsSegmentedCloud(track_id));
     }
 
     // Find matches.

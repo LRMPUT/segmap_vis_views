@@ -3,7 +3,8 @@
 <launch>
   
   <arg name="respawn_value" default="false" /> <!-- boolean: true, false -->
-  <arg name="root_dir" default="/media/janw/JanW/datasets/JW/KITTI" />
+<!--  <arg name="root_dir" default="/media/janw/JanW/datasets/JW/KITTI" />-->
+  <arg name="root_dir" default="/mnt/data/datasets/JW/KITTI" />
 
   <!-- Bag file path -->
   <!-- <arg name="bag_file" value="$(arg root_dir)/05/05.bag"/> -->
@@ -18,7 +19,7 @@
   <rosparam command="load" file="$(find segmapper)/launch/kitti/cnn_kitti_loop_closure.yaml"/>
 
   <!-- rviz node -->
-  <node name="visualizer" pkg="rviz" type="rviz" output="screen" respawn="$(arg respawn_value)" args="-d $(arg rviz_config_file)" />
+<!--  <node name="visualizer" pkg="rviz" type="rviz" output="screen" respawn="$(arg respawn_value)" args="-d $(arg rviz_config_file)" />-->
   
   <!-- CNN model path -->
   <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64/"/>

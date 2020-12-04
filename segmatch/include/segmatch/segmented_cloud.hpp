@@ -98,6 +98,8 @@ class SegmentedCloud {
   void addSegmentedCloud(const SegmentedCloud& segmented_cloud_to_add,
                          const std::vector<std::pair<Id, Id>>& renamed_segments = { });
 
+  void addSegmentedCloudAndCompress(const SegmentedCloud& rhs);
+
   /// \brief Adds or updates a segment in the cloud.
   /// \param segment_to_add Indices of the points belonging to the segment.
   /// \param reference_cloud Point cloud from which the segment is extracted.
@@ -205,7 +207,7 @@ class SegmentedCloud {
 
   void clearFarVisViews();
 
-  void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views);
+  void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views, bool compress = false);
 
   std::vector<laser_slam_ros::VisualView>& getVisViews() {
     return vis_views_;

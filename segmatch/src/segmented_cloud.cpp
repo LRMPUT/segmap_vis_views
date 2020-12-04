@@ -54,6 +54,14 @@ void SegmentedCloud::addSegmentedCloud(
   cleanEmptySegments(); 
 }
 
+void SegmentedCloud::addSegmentedCloudAndCompress(const SegmentedCloud& rhs) {
+  for (auto& id_segment: rhs.valid_segments_) {
+    this->addValidSegment(id_segment.second);
+  }
+
+  this->addVisViews(rhs.getVisViews(), true);
+}
+
 void SegmentedCloud::addValidSegment(const Segment& segment_to_add) {
   CHECK(segment_to_add.hasValidId());
   //TODO(Renaud) unexpected behavior if the segment had more than one view.
@@ -306,8 +314,9 @@ void SegmentedCloud::cleanEmptySegments() {
 }
 
 void SegmentedCloud::clearFarVisViews() {
-  if(!valid_segments_.empty()) {
-    const auto &position = valid_segments_.begin()->second.getLastView().T_w_linkpose.getPosition();
+  if(!vis_views_.empty()) {
+    // Check the distance between last vis view and other vis views
+    const auto &position = vis_views_.rbegin()->getPose().T_w.getPosition();
 
     std::vector<laser_slam_ros::VisualView> valid_vis_views;
     for (const auto &view : vis_views_) {
@@ -317,7 +326,7 @@ void SegmentedCloud::clearFarVisViews() {
       double dx = x - position[0];
       double dy = y - position[1];
       double dz = z - position[2];
-      if (dx * dx + dy * dy < 50*50 && -999.0 <= dz && dz <= 999.0) {
+      if (dx * dx + dy * dy < 80*80 && -999.0 <= dz && dz <= 999.0) {
         valid_vis_views.push_back(view);
       }
     }
@@ -325,7 +334,7 @@ void SegmentedCloud::clearFarVisViews() {
   }
 }
 
-void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views) {
+void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views, bool compress) {
   // LOG(INFO) << "Adding new views";
 
   curves::Time last_time_ns(-1);
@@ -337,30 +346,35 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
     if(last_time_ns < vis_view.getTime()) {
       // LOG(INFO) << "Adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
       vis_views_.push_back(vis_view);
-    }
-    // else {
-    //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
-    // }
-    if (!vis_view.isCompressed()) {
-      // LOG(INFO) << "Checking if view with ts = " << view.getTime() << " is the best for some segment";
-      for (auto &segment : valid_segments_) {
-        bool wasVisible = false;
-        for (const auto &view : segment.second.views) {
-          if (view.timestamp_ns == vis_view.getTime()) {
-            wasVisible = true;
+
+      if (compress) {
+        vis_views_.back().compress();
+      }
+
+      if (!vis_views_.back().isCompressed()) {
+        // LOG(INFO) << "Checking if view with ts = " << vis_views_.back().getTime() << " is the best for some segment";
+        for (auto &segment : valid_segments_) {
+          bool wasVisible = false;
+          for (const auto &view : segment.second.views) {
+            if (view.timestamp_ns == vis_views_.back().getTime()) {
+              wasVisible = true;
+            }
           }
-        }
-        if (wasVisible) {
-          laser_slam_ros::VisualView::MatrixInt mask = vis_view.getMask(segment.second.getLastView().point_cloud);
-          int cnt = (mask.array() > 0).count();
-          // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
-          if (cnt > segment.second.bestViewPts) {
-            segment.second.bestViewPts = cnt;
-            segment.second.bestViewTs = vis_view.getTime();
+          if (wasVisible) {
+            laser_slam_ros::VisualView::MatrixInt mask = vis_views_.back().getMask(segment.second.getLastView().point_cloud);
+            int cnt = (mask.array() > 0).count();
+            // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
+            if (cnt > segment.second.bestViewPts) {
+              segment.second.bestViewPts = cnt;
+              segment.second.bestViewTs = vis_views_.back().getTime();
+            }
           }
         }
       }
     }
+    // else {
+    //   LOG(INFO) << "Not adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
+    // }
   }
   // LOG(INFO) << "SegmentedCloud vis views = " << vis_views_.size();
 }
