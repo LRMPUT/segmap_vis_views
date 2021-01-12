@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 # define the cnn model
-def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
+def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet=0):
     with tf.name_scope("InputScope") as scope:
         cnn_input = tf.placeholder(
             dtype=tf.float32, shape=(None,) + input_shape + (1,), name="input"
@@ -197,23 +197,31 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         tf.add(bn_descriptor, 0, name="descriptor_bn_read")
         tf.add(descriptor, 0, name="descriptor_read")
 
-    dropout_descriptor = tf.layers.dropout(
-        bn_descriptor, rate=0.35, training=training, name="dropout_descriptor"
-    )
+    if triplet > 0:
+        y_true_label = tf.math.argmax(y_true, axis=1)
+        loss_c = tf.identity(tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true_label,
+                                                                                     descriptor,
+                                                                                     0.1),
+                             name="loss_c")
+    else:
+        dropout_descriptor = tf.layers.dropout(
+            bn_descriptor, rate=0.35, training=training, name="dropout_descriptor"
+        )
 
-    y_pred = tf.layers.dense(
-        inputs=dropout_descriptor,
-        units=n_classes,
-        kernel_initializer=tf.contrib.layers.xavier_initializer(),
-        activation=None,
-        use_bias=True,
-        name="classes",
-    )
+        y_pred = tf.layers.dense(
+            inputs=dropout_descriptor,
+            units=n_classes,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            activation=None,
+            use_bias=True,
+            name="classes",
+        )
 
-    loss_c = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_pred, labels=y_true),
-        name="loss_c",
-    )
+        loss_c = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_pred, labels=y_true),
+            name="loss_c",
+        )
+
 
     # reconstruction network
     dec_dense1 = tf.layers.dense(
@@ -292,10 +300,13 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False):
         train_op = optimizer.minimize(loss, name="train_op")
 
     # statistics
-    y_prob = tf.nn.softmax(y_pred, name="y_prob")
+    # y_prob = tf.nn.softmax(y_pred, name="y_prob")
 
-    correct_pred = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y_true, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name="accuracy")
+    if triplet > 0:
+        accuracy = tf.identity(loss_c, name="accuracy")
+    else:
+        correct_pred = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y_true, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name="accuracy")
 
     roc_auc = tf.placeholder(dtype=tf.float32, shape=(), name="roc_auc")
 

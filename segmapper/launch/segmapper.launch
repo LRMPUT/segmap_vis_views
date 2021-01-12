@@ -14,6 +14,7 @@
 
   <!-- segmapper node -->
   <node name="segmapper" pkg="segmapper" type="segmapper_node" output="screen" respawn="false" launch-prefix="$(arg launch_prefix)">
+<!--  <node name="segmapper" pkg="segmapper" type="segmapper_node" output="screen" respawn="false" launch-prefix="gdb -ex run &#45;&#45;args">-->
     <param name="icp_configuration_file" value="$(arg icp_configuration_file)"/>
     <param name="icp_input_filters_file" value="$(arg icp_input_filters_file)"/>
   </node>

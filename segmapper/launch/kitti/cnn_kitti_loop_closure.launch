@@ -8,7 +8,7 @@
 
   <!-- Bag file path -->
   <!-- <arg name="bag_file" value="$(arg root_dir)/05/05.bag"/> -->
-  <arg name="bag_file" value="$(arg root_dir)/00/00.bag"/>
+  <arg name="bag_file" value="$(arg root_dir)/08/08.bag"/>
   <rosparam param="LaserMapper/bag_file" subst_value="True">$(arg bag_file)</rosparam>
 	
   <!-- Rviz visualization config file path -->
