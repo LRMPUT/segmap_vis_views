@@ -132,9 +132,9 @@ class Preprocessor(object):
         if normalize:
             # intensity
             # MulRan mean 209.30, std dev 173.09
-            # vis_views[:, :, :, 0] = (vis_views[:, :, :, 0] - 209.30) / 173.09
+            vis_views[:, :, :, 0] = (vis_views[:, :, :, 0] - 209.30) / 173.09
             # KITTI mean 19020.73, std dev 8297.86
-            vis_views[:, :, :, 0] = (vis_views[:, :, :, 0] - 19020.73) / 8297.86
+            # vis_views[:, :, :, 0] = (vis_views[:, :, :, 0] - 19020.73) / 8297.86
 
             # mask - values in [0, 255] range
             vis_views[:, :, :, 1] = vis_views[:, :, :, 1] / 255.0
@@ -142,9 +142,9 @@ class Preprocessor(object):
             # range
             mean_mask_range = np.mean(vis_views[vis_views[:, :, :, 1] > 0, 2])
             # MulRan std dev 7632.0
-            # vis_views[:, :, :, 2] = (vis_views[:, :, :, 2] - mean_mask_range) / 7632.0
+            vis_views[:, :, :, 2] = (vis_views[:, :, :, 2] - mean_mask_range) / 7632.0
             # KITTI std dev 6337.61
-            vis_views[:, :, :, 2] = (vis_views[:, :, :, 2] - mean_mask_range) / 6337.61
+            # vis_views[:, :, :, 2] = (vis_views[:, :, :, 2] - mean_mask_range) / 6337.61
         return vis_views
 
     def get_n_batches(self, train=True):
