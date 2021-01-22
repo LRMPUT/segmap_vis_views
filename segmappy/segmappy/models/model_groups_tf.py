@@ -201,7 +201,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
         y_true_label = tf.math.argmax(y_true, axis=1)
         loss_c = tf.identity(tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true_label,
                                                                                      descriptor,
-                                                                                     0.1),
+                                                                                     1.0),
                              name="loss_c")
     else:
         dropout_descriptor = tf.layers.dropout(
@@ -282,7 +282,8 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     tf.identity(loss_r, "loss_r")
 
     # training
-    LOSS_R_WEIGHT = 200
+    # LOSS_R_WEIGHT = 200
+    LOSS_R_WEIGHT = 1
     LOSS_C_WEIGHT = 1
     loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
     # loss = tf.add(LOSS_C_WEIGHT * loss_c, 0, name="loss")

@@ -21,6 +21,7 @@ class Dataset(object):
         require_diff_points=0,
         normalize_classes=True,
         use_visual=False,
+        remove_poorly_visible=True,
         largest_vis_view=False
     ):
         abs_folder = os.path.abspath(os.path.join(base_dir, folder))
@@ -39,6 +40,7 @@ class Dataset(object):
         self.require_diff_points = require_diff_points
         self.normalize_classes = normalize_classes
         self.use_visual = use_visual
+        self.remove_poorly_visible = remove_poorly_visible
         self.largest_vis_view = largest_vis_view
 
     # load the segment dataset
@@ -101,7 +103,8 @@ class Dataset(object):
             assert preprocessor is not None
             self._remove_similar(preprocessor)
 
-        self._remove_poorly_visible()
+        if self.remove_poorly_visible:
+            self._remove_poorly_visible()
 
         if self.largest_vis_view:
             self._select_largest_vis_views()

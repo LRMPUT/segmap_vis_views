@@ -43,6 +43,7 @@ class Generator(object):
 
             self.idxs = {c: 0 for c in self.classes}
 
+            print('Found %d classes with enough views' % len(self.classes))
             self.n_batches = len(self.classes) // self.batch_classes
         else:
             self.n_batches = int(np.ceil(float(self.n_segments) / batch_size))

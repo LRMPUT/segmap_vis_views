@@ -14,12 +14,12 @@ from segmappy.tools.hull import point_in_hull, n_points_in_hull, are_in_hull
 from segmappy.core.config import get_default_dataset_dir
 
 
-DATASET_FOLDER = "00"
+DATASET_FOLDER = "06"
 FILE_PATH = os.path.join(get_default_dataset_dir(), DATASET_FOLDER + "/matches_database.csv")
 if os.path.isfile(FILE_PATH):
     os.remove(FILE_PATH)
 
-dataset = Dataset(folder=DATASET_FOLDER, use_matches=False, normalize_classes=False)
+dataset = Dataset(folder=DATASET_FOLDER, use_matches=False, normalize_classes=False, remove_poorly_visible=False)
 segments, _, ids, n_ids, features, matches, labels_dict, _, _, _ = dataset.load()
 
 filtered_segments = []
@@ -97,6 +97,11 @@ for i in range(n_unique_ids):
     range_j = range(n_unique_ids - i - 1 - N_ID_TO_SKIP)
     range_j = [x + i + 1 + N_ID_TO_SKIP for x in range_j]
     print("i: ", i)
+
+    # fig = plt.figure(1)
+    # ax = fig.add_subplot(1, 2, 1)
+    # plt.plot(segment1[:, 0], segment1[:, 1], "o")
+
     for j in range_j:
         if (
             np.linalg.norm(unique_centroids[i] - unique_centroids[j])
