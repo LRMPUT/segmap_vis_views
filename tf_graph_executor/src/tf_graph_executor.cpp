@@ -340,7 +340,15 @@ void TensorflowGraphExecutor::batchFullForwardPassVisViews(
         }
     }
 
-    LOG(INFO) << "Executing graph with vis views";
+    // LOG(INFO) << "Executing graph with vis views";
+    // LOG(INFO) << "input_tensor_name: " << input_tensor_name;
+    // LOG(INFO) << "inputTensor.shape(): " << inputTensor.shape();
+    // LOG(INFO) << "input_vis_tensor_name: " << input_vis_tensor_name;
+    // LOG(INFO) << "inputVisTensor.shape(): " << inputVisTensor.shape();
+    // LOG(INFO) << "scales_tensor_name: " << scales_tensor_name;
+    // LOG(INFO) << "scales_tensor.shape(): " << scales_tensor.shape();
+    // LOG(INFO) << "descriptor_values_name: " << descriptor_values_name;
+    // LOG(INFO) << "reconstruction_values_name: " << reconstruction_values_name;
     std::vector<Tensor> output_tensors;
     Status status = this->executeGraph(
             {{input_tensor_name, inputTensor},
@@ -348,7 +356,10 @@ void TensorflowGraphExecutor::batchFullForwardPassVisViews(
              {scales_tensor_name, scales_tensor}},
             {descriptor_values_name, reconstruction_values_name},
             output_tensors);
-    LOG(INFO) << "Graph executed";
+    // LOG(INFO) << "Graph executed";
+    // for (int t = 0; t < output_tensors.size(); ++t) {
+    //   LOG(INFO) << "output_tensors[" << t << "].shape() = " << output_tensors[t].shape();
+    // }
 
     if (!status.ok()) {
         LOG(INFO) << status.error_message();

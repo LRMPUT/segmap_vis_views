@@ -246,7 +246,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                               reconstructions);
       }
       else {
-        LOG(INFO) << "Executing with visual views";
+        LOG(INFO) << "Executing with visual views batch_nn_input.size() < mini_batch_size_";
         graph_executor_->batchFullForwardPassVisViews(batch_nn_input,
                                                       kInputTensorName,
                                                       batch_nn_input_vis,
@@ -282,7 +282,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                                   mini_batch_reconstructions);
           }
           else {
-            LOG(INFO) << "Executing with visual views";
+            LOG(INFO) << "Executing with visual views mini_batch.size() == mini_batch_size_";
             graph_executor_->batchFullForwardPassVisViews(mini_batch,
                                                           kInputTensorName,
                                                           mini_batch_vis,
@@ -303,6 +303,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                  mini_batch_reconstructions.end());
           mini_batch_scales.clear();
           mini_batch.clear();
+          mini_batch_vis.clear();
         }
       }
       if (!mini_batch.empty()) {
@@ -320,7 +321,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                                 mini_batch_reconstructions);
         }
         else {
-          LOG(INFO) << "Executing with visual views";
+          LOG(INFO) << "Executing with visual views !mini_batch.empty()";
           graph_executor_->batchFullForwardPassVisViews(mini_batch,
                                                         kInputTensorName,
                                                         mini_batch_vis,
