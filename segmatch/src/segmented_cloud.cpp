@@ -318,6 +318,11 @@ void SegmentedCloud::clearFarVisViews() {
     // Check the distance between last vis view and other vis views
     const auto &position = vis_views_.rbegin()->getPose().T_w.getPosition();
 
+    std::set<curves::Time> bestVisViewTs;
+    for (const auto& segment : valid_segments_) {
+      bestVisViewTs.insert(segment.second.bestViewTs);
+    }
+
     std::vector<laser_slam_ros::VisualView> valid_vis_views;
     for (const auto &view : vis_views_) {
       const double &x = view.getPose().T_w.getPosition()[0];
@@ -326,8 +331,12 @@ void SegmentedCloud::clearFarVisViews() {
       double dx = x - position[0];
       double dy = y - position[1];
       double dz = z - position[2];
-      if (dx * dx + dy * dy < 80*80 && -999.0 <= dz && dz <= 999.0) {
+      // If within the range or it is the best view for some segment
+      if (dx * dx + dy * dy < 80*80 && -999.0 <= dz && dz <= 999.0 || bestVisViewTs.count(view.getTime()) > 0) {
         valid_vis_views.push_back(view);
+      }
+      else {
+        LOG(INFO) << "Removing visView with ts = " << view.getTime() << " ";
       }
     }
     vis_views_.swap(valid_vis_views);

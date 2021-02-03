@@ -465,8 +465,8 @@ class Dataset(object):
                 prev_id = id
 
             cur_mask = cv2.imread(self.mask_paths[idx], cv2.IMREAD_ANYDEPTH)
-            cur_mask = cv2.dilate(cur_mask, 5)
-            cur_mask = cv2.erode(cur_mask, 5)
+            # cur_mask = cv2.dilate(cur_mask, 5)
+            # cur_mask = cv2.erode(cur_mask, 5)
             cur_size = np.nonzero(cur_mask)[0].size
             if cur_size > largest_size:
                 largest_size = cur_size

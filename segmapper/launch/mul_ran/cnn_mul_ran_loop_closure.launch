@@ -23,7 +23,7 @@
 
   <!-- CNN model path -->
 <!--  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_wo_vis_views/"/>-->
-  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_w_vis_views_work/"/>
+  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_w_vis_views/"/>
   <rosparam param="/SegMapper/SegMatchWorker/SegMatch/Descriptors/cnn_model_path" subst_value="True">$(arg cnn_model_path)</rosparam>
 
   <!-- Semantics nn path -->

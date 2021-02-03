@@ -196,6 +196,13 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
           break;
         }
       }
+      if (bestV == -1) {
+        LOG(INFO) << "Found bestV == -1";
+        LOG(INFO) << "it->second.bestViewTs = " << it->second.bestViewTs;
+        for (int v = 0; v < visViews.size(); ++v) {
+          LOG(INFO) << "visViews[v].getTime() = " << visViews[v].getTime();
+        }
+      }
       CHECK_GE(bestV, 0);
       // Could be precomputed, but would need extra memory
       laser_slam_ros::VisualView::MatrixInt mask = visViews[bestV].getMask(it->second.getLastView().point_cloud);
@@ -246,7 +253,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                               reconstructions);
       }
       else {
-        LOG(INFO) << "Executing with visual views batch_nn_input.size() < mini_batch_size_";
+        // LOG(INFO) << "Executing with visual views batch_nn_input.size() < mini_batch_size_";
         graph_executor_->batchFullForwardPassVisViews(batch_nn_input,
                                                       kInputTensorName,
                                                       batch_nn_input_vis,
@@ -282,7 +289,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                                   mini_batch_reconstructions);
           }
           else {
-            LOG(INFO) << "Executing with visual views mini_batch.size() == mini_batch_size_";
+            // LOG(INFO) << "Executing with visual views mini_batch.size() == mini_batch_size_";
             graph_executor_->batchFullForwardPassVisViews(mini_batch,
                                                           kInputTensorName,
                                                           mini_batch_vis,
@@ -321,7 +328,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
                                                 mini_batch_reconstructions);
         }
         else {
-          LOG(INFO) << "Executing with visual views !mini_batch.empty()";
+          // LOG(INFO) << "Executing with visual views !mini_batch.empty()";
           graph_executor_->batchFullForwardPassVisViews(mini_batch,
                                                         kInputTensorName,
                                                         mini_batch_vis,

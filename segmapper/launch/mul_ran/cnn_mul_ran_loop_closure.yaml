@@ -8,7 +8,7 @@ SegMapper: {
   publish_world_to_odom: true,
   tf_publication_rate_hz: 10,
   
-  export_loop_closures: false,
+  export_loop_closures: true,
     
   LaserSlamWorker: {
     use_odometry_information: true,
@@ -45,7 +45,7 @@ SegMapper: {
   
   ratio_of_points_to_keep_when_publishing: 1.0,
   
-  export_segments_and_matches: true,
+  export_segments_and_matches: false,
   publish_predicted_segment_matches: false,
   
   line_scale_loop_closures: 5.0,
@@ -80,7 +80,8 @@ SegMapper: {
     },
 
     Descriptors: {
-      descriptor_types: ["CNN", "EigenvalueBased"],
+#      descriptor_types: ["CNN", "EigenvalueBased"],
+      descriptor_types: ["CNN"],
       use_vis_views: true,
     },
 

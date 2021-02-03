@@ -121,7 +121,7 @@ void SegMatch::transferSourceToTarget(unsigned int track_id,
                                5u);
 
   // TODO Comment to speed up during dataset generation.
-  // classifier_->setTarget(segmented_target_cloud_);
+  classifier_->setTarget(segmented_target_cloud_);
 }
 
 void SegMatch::processCloud(MapCloud& cloud,
