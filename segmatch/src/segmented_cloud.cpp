@@ -335,11 +335,58 @@ void SegmentedCloud::clearFarVisViews() {
       if (dx * dx + dy * dy < 80*80 && -999.0 <= dz && dz <= 999.0 || bestVisViewTs.count(view.getTime()) > 0) {
         valid_vis_views.push_back(view);
       }
-      else {
-        LOG(INFO) << "Removing visView with ts = " << view.getTime() << " ";
-      }
+      // else {
+      //   LOG(INFO) << "Removing visView with ts = " << view.getTime() << " ";
+      // }
     }
     vis_views_.swap(valid_vis_views);
+  }
+}
+
+void SegmentedCloud::findBestVisViews() {
+  for(const auto &vis_view : vis_views_) {
+    if (!vis_view.isCompressed()) {
+      // LOG(INFO) << "Checking if view with ts = " << vis_view.getTime() << " is the best for some segment";
+      // LOG(INFO) << "valid_segments_.size() = " << valid_segments_.size();
+      for (auto &segment : valid_segments_) {
+        // LOG(INFO) << "count for (" << segment.first << ", " << segment.second.getLastView().timestamp_ns << ") = "
+        //           << checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
+        if (checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns)) == 0) {
+          bool wasVisible = false;
+          for (const auto &view : segment.second.views) {
+            if (view.timestamp_ns == vis_view.getTime()) {
+              wasVisible = true;
+            }
+          }
+          if (wasVisible) {
+            laser_slam_ros::VisualView::MatrixInt mask = vis_view.getMask(segment.second.getLastView().point_cloud);
+            int cnt = (mask.array() > 0).count();
+
+            // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
+            if (cnt > segment.second.bestViewPts) {
+              segment.second.bestViewPts = cnt;
+              segment.second.bestViewTs = vis_view.getTime();
+            }
+          }
+        }
+        else {
+          LOG(INFO) << "count for (" << segment.first << ", " << segment.second.getLastView().timestamp_ns << ") = "
+                    << checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
+        }
+      }
+    }
+  }
+  for (auto &segment : valid_segments_) {
+    if (segment.second.bestViewPts < 0) {
+      LOG(ERROR) << "Segment " << segment.first << " without best vis view";
+      for (const auto &view : segment.second.views) {
+        LOG(ERROR) << "view.timestamp_ns = " << view.timestamp_ns;
+      }
+      for(const auto &vis_view : vis_views_) {
+        LOG(ERROR) << "vis_view.getTime() = " << vis_view.getTime();
+      }
+    }
+    checked_views_.insert(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
   }
 }
 
@@ -353,32 +400,11 @@ void SegmentedCloud::addVisViews(const std::vector<laser_slam_ros::VisualView> &
   for(const auto &vis_view : new_views) {
     // it is a new view
     if(last_time_ns < vis_view.getTime()) {
-      // LOG(INFO) << "Adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << view.getTime();
+      // LOG(INFO) << "Adding new view, last_time_ns = " << last_time_ns << ", view.getTime() = " << vis_view.getTime();
       vis_views_.push_back(vis_view);
 
       if (compress) {
         vis_views_.back().compress();
-      }
-
-      if (!vis_views_.back().isCompressed()) {
-        // LOG(INFO) << "Checking if view with ts = " << vis_views_.back().getTime() << " is the best for some segment";
-        for (auto &segment : valid_segments_) {
-          bool wasVisible = false;
-          for (const auto &view : segment.second.views) {
-            if (view.timestamp_ns == vis_views_.back().getTime()) {
-              wasVisible = true;
-            }
-          }
-          if (wasVisible) {
-            laser_slam_ros::VisualView::MatrixInt mask = vis_views_.back().getMask(segment.second.getLastView().point_cloud);
-            int cnt = (mask.array() > 0).count();
-            // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
-            if (cnt > segment.second.bestViewPts) {
-              segment.second.bestViewPts = cnt;
-              segment.second.bestViewTs = vis_views_.back().getTime();
-            }
-          }
-        }
       }
     }
     // else {

@@ -207,6 +207,8 @@ class SegmentedCloud {
 
   void clearFarVisViews();
 
+  void findBestVisViews();
+
   void addVisViews(const std::vector<laser_slam_ros::VisualView> &new_views, bool compress = false);
 
   std::vector<laser_slam_ros::VisualView>& getVisViews() {
@@ -223,6 +225,10 @@ class SegmentedCloud {
   bool keep_only_last_view_;
 
   std::vector<laser_slam_ros::VisualView> vis_views_;
+
+  // Set of all segment views that were checked for best vis view.
+  // pair<segment id, view ts>
+  std::set<std::pair<Id, laser_slam::Time>> checked_views_;
 
   // Create a new view when the number of points increased by this ratio.
   // Currently only used for exporting the run data.

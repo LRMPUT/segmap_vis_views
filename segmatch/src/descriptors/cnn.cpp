@@ -197,7 +197,13 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
         }
       }
       if (bestV == -1) {
-        LOG(INFO) << "Found bestV == -1";
+        LOG(INFO) << "Found bestV == -1 ";
+        LOG(INFO) << "it->second.segment_id = " << it->second.segment_id;
+        LOG(INFO) << "it->second.getLastView().timestamp_ns = " << it->second.getLastView().timestamp_ns;
+        for (const auto &view : it->second.views) {
+          LOG(INFO) << "view.timestamp_ns = " << view.timestamp_ns;
+        }
+        LOG(INFO) << "it->second.bestViewPts = " << it->second.bestViewPts;
         LOG(INFO) << "it->second.bestViewTs = " << it->second.bestViewTs;
         for (int v = 0; v < visViews.size(); ++v) {
           LOG(INFO) << "visViews[v].getTime() = " << visViews[v].getTime();

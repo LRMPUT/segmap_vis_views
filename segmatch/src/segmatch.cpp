@@ -87,12 +87,13 @@ void SegMatch::processAndSetAsSourceCloud(
                                                  merge_event.second));
   }
 
-  segmented_source_clouds_[track_id].clearFarVisViews();
-  segmented_source_clouds_[track_id].addVisViews(local_map.getVisViews());
-
   segmented_source_clouds_[track_id].setTimeStampOfSegments(latest_pose.time_ns);
   segmented_source_clouds_[track_id].setLinkPoseOfSegments(latest_pose.T_w);
   segmented_source_clouds_[track_id].setTrackId(track_id);
+
+  segmented_source_clouds_[track_id].clearFarVisViews();
+  segmented_source_clouds_[track_id].addVisViews(local_map.getVisViews());
+  segmented_source_clouds_[track_id].findBestVisViews();
 
   // Describe the cloud.
   BENCHMARK_START("SM.Worker.Describe");
