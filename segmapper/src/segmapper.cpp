@@ -198,6 +198,9 @@ void SegMapper::segMatchThread() {
 
     // Update the local map with the new points and the new pose.
     Pose current_pose = incremental_estimator_->getCurrentPose(track_id);
+    if (!new_points_and_views.second.empty()) {
+      current_pose = incremental_estimator_->getLaserTrack(track_id)->findNearestPose(new_points_and_views.second.back().getTime());
+    }
     {
       std::lock_guard<std::mutex> map_lock(local_maps_mutexes_[track_id]);
       local_maps_[track_id].updatePoseAndAddPoints(new_points_and_views.first,

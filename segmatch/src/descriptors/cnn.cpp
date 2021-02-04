@@ -65,8 +65,13 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
     if (static_cast<double>(num_points) < static_cast<double>(
         it->second.getLastView().n_points_when_last_described) *
         (1.0 + kMinChangeBeforeDescription)) continue;
+
+    if (params_.use_vis_views && it->second.bestViewPts < 200) {
+      continue;
+    }
+
     described_segment_ids.push_back(it->second.segment_id);
-  
+
     // Align with PCA.
     double alignment_rad;
     Eigen::Vector4f pca_centroid;
@@ -221,6 +226,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
           if (mask(r, c) > 0) {
             meanMaskRange += range(r, c);
             maskRangeCnt += 1;
+            mask(r, c) = 1.0;
           }
         }
       }
@@ -231,7 +237,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
           // MulRan
           nn_input_vis.container[r][c][0] = (intensity(r, c) - 209.30) / 173.09;
           nn_input_vis.container[r][c][1] = mask(r, c);
-          nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) / (7632.0 / 500.0);
+          nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) * 500.0 / (7632.0);
         }
       }
     }

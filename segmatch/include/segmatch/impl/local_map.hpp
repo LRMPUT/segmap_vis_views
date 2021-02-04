@@ -71,10 +71,10 @@ void LocalMap<InputPointT, ClusteredPointT>::updatePoseAndAddPoints(
   }
 
   // LOG(INFO) << "before LocalMap vis views = " << vis_views_.size() << ", adding " << new_views.size() << " views";
-  LOG(INFO) << "pose.time_ns = " << pose.time_ns;
-  for (const auto &view : new_views) {
-    LOG(INFO) << "Adding to local map vis view with ts = " << view.getTime();
-  }
+  // LOG(INFO) << "pose.time_ns = " << pose.time_ns;
+  // for (const auto &view : new_views) {
+  //   LOG(INFO) << "Adding to local map vis view with ts = " << view.getTime();
+  // }
   vis_views_.insert(vis_views_.end(), new_views.begin(), new_views.end());
 
   // for(auto &curVisView : new_views){
@@ -151,9 +151,9 @@ std::vector<bool> LocalMap<InputPointT, ClusteredPointT>::updatePose(const laser
     if(dx*dx + dy*dy < radius_squared_m2_ && min_vertical_distance_m_ <= dz && dz <= max_vertical_distance_m_) {
       valid_vis_views.push_back(view);
     }
-    else {
-      LOG(INFO) << "Removing from local map vis view with ts = " << view.getTime();
-    }
+    // else {
+    //   LOG(INFO) << "Removing from local map vis view with ts = " << view.getTime();
+    // }
   }
   vis_views_.swap(valid_vis_views);
 

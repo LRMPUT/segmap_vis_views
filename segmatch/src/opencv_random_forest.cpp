@@ -173,6 +173,9 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
         if (it_source->second.empty()) continue;  
         if (it_source->second.getLastView().semantic == 1u) continue;
       }
+      if (it_source->second.getLastView().features.size() == 0) {
+        continue;
+      }
 
       Segment source_segment = it_source->second;
       Eigen::MatrixXd features_source = 
@@ -288,12 +291,19 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
   // TODO RD Solve the need for cleaning empty segments and clean here.
   unsigned int n_non_empty_views = 0;
   for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
-      it != target_cloud.end(); ++it) {
-      if (!it->second.empty()) {
-          ++n_non_empty_views;
-      }
+      it != target_cloud.end(); ++it)
+  {
+
+    // LOG(INFO) << "it->second.getLastView().features.size() = " << it->second.getLastView().features.size();
+    // LOG(INFO) << "it->second.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().size() = "
+    //           << it->second.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().size();
+    if (!it->second.empty() &&
+        it->second.getLastView().features.size() > 0)
+    {
+        ++n_non_empty_views;
+    }
   }
-  
+  // LOG(INFO) << "Checked all segments for empty views and features";
   if (n_non_empty_views != target_cloud.getNumberOfValidSegments()) { 
       LOG(INFO) << "Some segments had empty views";
   }
@@ -306,7 +316,9 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     unsigned int n_non_car = 0;
     for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
         it != target_cloud.end(); ++it) {
-        if (!it->second.empty()) {
+        if (!it->second.empty()  &&
+            it->second.getLastView().features.size() > 0)[]
+        {
             if(it->second.getLastView().semantic != 1u) {
                 ++n_non_car;
             } 
@@ -316,12 +328,18 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
                           params_.knn_feature_dim);
   }
 
+  // if no valid segment
+  if (target_matrix_.rows() == 0) {
+    return;
+  }
+
   unsigned int i = 0u;
   for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
       it != target_cloud.end(); ++it) {
     Segment target_segment = it->second;
     if (target_segment.empty()) continue;
     if (params_.do_not_use_cars && target_segment.getLastView().semantic == 1u) continue;
+    if (target_segment.getLastView().features.size() == 0) continue;
 
     target_matrix_.block(i, 0, 1, params_.knn_feature_dim) =
         target_segment.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().block(
@@ -339,6 +357,8 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
 
   target_matrix_.transposeInPlace();
   nns_ = NNSearchF::createKDTreeLinearHeap(target_matrix_);
+
+  LOG(INFO) << "Added all features to target";
 }
 
 void OpenCvRandomForest::normalizeEigenFeatures(Eigen::MatrixXd* f) {
