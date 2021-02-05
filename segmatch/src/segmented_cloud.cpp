@@ -282,6 +282,17 @@ void SegmentedCloud::updateSegments(const std::vector<laser_slam::Trajectory>& t
     // Update the link pose.
     id_segment.second.getLastView().T_w_linkpose = new_pose;
   }
+  // TODO Correct with proper value
+  int track_id = 0;
+  for (auto& view: vis_views_) {
+    SE3 new_pose_se3 = trajectories.at(track_id).at(view.getTime());
+
+    laser_slam::Pose new_pose = view.getPose();
+    new_pose.T_w = new_pose_se3;
+
+    // Update the link pose.
+    view.setPose(new_pose);
+  }
 }
 
 size_t SegmentedCloud::getCloseSegmentPairsCount(const float max_distance) const {
@@ -345,35 +356,29 @@ void SegmentedCloud::clearFarVisViews() {
 
 void SegmentedCloud::findBestVisViews() {
   for(const auto &vis_view : vis_views_) {
-    if (!vis_view.isCompressed()) {
+    if (!vis_view.isCompressed() && checked_vis_views_.count(vis_view.getTime()) == 0) {
       // LOG(INFO) << "Checking if view with ts = " << vis_view.getTime() << " is the best for some segment";
       // LOG(INFO) << "valid_segments_.size() = " << valid_segments_.size();
       for (auto &segment : valid_segments_) {
-        // LOG(INFO) << "count for (" << segment.first << ", " << segment.second.getLastView().timestamp_ns << ") = "
-        //           << checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
-        if (checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns)) == 0) {
-          bool wasVisible = false;
-          for (const auto &view : segment.second.views) {
-            if (view.timestamp_ns == vis_view.getTime()) {
-              wasVisible = true;
-            }
-          }
-          if (wasVisible) {
-            laser_slam_ros::VisualView::MatrixInt mask = vis_view.getMask(segment.second.getLastView().point_cloud);
-            int cnt = (mask.array() > 0).count();
+        // bool wasVisible = false;
+        // for (const auto &view : segment.second.views) {
+        //   if (view.timestamp_ns == vis_view.getTime()) {
+        //     wasVisible = true;
+        //   }
+        // }
+        bool wasVisible = true;
+        if (wasVisible) {
+          laser_slam_ros::VisualView::MatrixInt mask = vis_view.getMask(segment.second.getLastView().point_cloud);
+          int cnt = (mask.array() > 0).count();
 
-            // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
-            if (cnt > segment.second.bestViewPts) {
-              segment.second.bestViewPts = cnt;
-              segment.second.bestViewTs = vis_view.getTime();
-            }
+          // LOG(INFO) << "segment.second.bestViewPts = " << segment.second.bestViewPts << ", cnt = " << cnt;
+          if (cnt > segment.second.bestViewPts) {
+            segment.second.bestViewPts = cnt;
+            segment.second.bestViewTs = vis_view.getTime();
           }
-        }
-        else {
-          LOG(INFO) << "count for (" << segment.first << ", " << segment.second.getLastView().timestamp_ns << ") = "
-                    << checked_views_.count(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
         }
       }
+      checked_vis_views_.insert(vis_view.getTime());
     }
   }
   for (auto &segment : valid_segments_) {
@@ -386,7 +391,6 @@ void SegmentedCloud::findBestVisViews() {
         LOG(ERROR) << "vis_view.getTime() = " << vis_view.getTime();
       }
     }
-    checked_views_.insert(std::make_pair(segment.first, segment.second.getLastView().timestamp_ns));
   }
 }
 

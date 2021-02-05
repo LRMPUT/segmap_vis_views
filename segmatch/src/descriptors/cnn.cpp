@@ -66,7 +66,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
         it->second.getLastView().n_points_when_last_described) *
         (1.0 + kMinChangeBeforeDescription)) continue;
 
-    if (params_.use_vis_views && it->second.bestViewPts < 200) {
+    if (params_.use_vis_views && it->second.bestViewPts < 50) {
       continue;
     }
 
@@ -230,8 +230,23 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
           }
         }
       }
-      CHECK_GE(maskRangeCnt, 0);
+      if (maskRangeCnt < it->second.bestViewPts - 20) {
+        LOG(INFO) << "\n\n\n\n\nmaskRangeCnt = " << maskRangeCnt;
+        LOG(INFO) << "it->second.bestViewPts = " << it->second.bestViewPts;
+        LOG(INFO) << "it->second.bestViewTs = " << it->second.bestViewTs;
+        LOG(INFO) << "it->second.getLastView().point_cloud.size() = " << it->second.getLastView().point_cloud.size() << "\n\n\n\n\n";
+      }
+      CHECK_GT(maskRangeCnt, 0);
       meanMaskRange /= maskRangeCnt;
+      // {
+      //   auto intensityScaled = (intensity.array() - 209.30) / 173.09;
+      //   auto rangeScaled = (range.array() - meanMaskRange) * 500.0 / (7632.0);
+      //   LOG(INFO) << "int mean = " << intensityScaled.mean();
+      //   LOG(INFO) << "int stddev = " << std::sqrt((intensityScaled - intensityScaled.mean()).square().mean());
+      //   LOG(INFO) << "range mean = " << rangeScaled.mean();
+      //   LOG(INFO) << "range stddev = " << std::sqrt((rangeScaled - rangeScaled.mean()).square().mean());
+      //   // LOG(INFO) << "mask(r, c) = \n" << mask;
+      // }
       for (int r = 0; r < n_vis_h_dim_; ++r) {
         for (int c = 0; c < n_vis_w_dim_; ++c) {
           // MulRan

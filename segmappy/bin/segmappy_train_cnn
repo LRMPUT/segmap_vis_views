@@ -271,8 +271,8 @@ gen_test = Generator(
     triplet=config.triplet
 )
 
-print("Training with %d segments" % gen_train.n_segments)
-print("Testing with %d segments" % gen_test.n_segments)
+print("Training with %d classes and %d segments" % (len(gen_train.classes), gen_train.n_segments))
+print("Testing with %d classes and %d segments" % (len(gen_test.classes), gen_test.n_segments))
 
 import tensorflow as tf
 

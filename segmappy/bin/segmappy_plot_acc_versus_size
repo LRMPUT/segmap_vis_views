@@ -31,7 +31,7 @@ dataset = Dataset(
     folder=config.cnn_test_folder,
     base_dir=config.base_dir,
     keep_match_thresh=0.7,
-    largest_vis_view=True
+    # largest_vis_view=True
 )
 
 segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths, range_paths = dataset.load()
@@ -179,6 +179,8 @@ with tf.Session(config=config_tf) as sess:
 
 feature_sets.append(np.array(cnn_features))
 
+print('mean \n', np.mean(feature_sets[2], axis=0))
+print('stddev \n', np.std(feature_sets[2], axis=0))
 
 # precompute last ids and the corresponding segment sizes for sequences
 last_ids = []

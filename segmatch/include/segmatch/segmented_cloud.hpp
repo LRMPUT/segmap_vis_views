@@ -228,7 +228,7 @@ class SegmentedCloud {
 
   // Set of all segment views that were checked for best vis view.
   // pair<segment id, view ts>
-  std::set<std::pair<Id, laser_slam::Time>> checked_views_;
+  std::set<laser_slam::Time> checked_vis_views_;
 
   // Create a new view when the number of points increased by this ratio.
   // Currently only used for exporting the run data.

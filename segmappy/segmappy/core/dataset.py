@@ -104,7 +104,7 @@ class Dataset(object):
         self._remove_poorly_visible()
 
         if self.largest_vis_view:
-            self._select_largest_vis_views()
+            self.  _select_largest_vis_views()
 
         # combine classes based on matches
         if self.use_matches:

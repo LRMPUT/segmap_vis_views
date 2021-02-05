@@ -282,8 +282,12 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     tf.identity(loss_r, "loss_r")
 
     # training
-    LOSS_R_WEIGHT = 200
-    LOSS_C_WEIGHT = 1
+    if triplet > 0:
+        LOSS_R_WEIGHT = 1
+        LOSS_C_WEIGHT = 1
+    else:
+        LOSS_R_WEIGHT = 200
+        LOSS_C_WEIGHT = 1
     loss = tf.add(LOSS_C_WEIGHT * loss_c, LOSS_R_WEIGHT * loss_r, name="loss")
     # loss = tf.add(LOSS_C_WEIGHT * loss_c, 0, name="loss")
 

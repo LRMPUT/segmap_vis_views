@@ -304,9 +304,9 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     }
   }
   // LOG(INFO) << "Checked all segments for empty views and features";
-  if (n_non_empty_views != target_cloud.getNumberOfValidSegments()) { 
-      LOG(INFO) << "Some segments had empty views";
-  }
+  // if (n_non_empty_views != target_cloud.getNumberOfValidSegments()) {
+  //     LOG(INFO) << "Some segments had empty views";
+  // }
   
   target_matrix_.resize(n_non_empty_views,
                         params_.knn_feature_dim);
@@ -317,7 +317,7 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
         it != target_cloud.end(); ++it) {
         if (!it->second.empty()  &&
-            it->second.getLastView().features.size() > 0)[]
+            it->second.getLastView().features.size() > 0)
         {
             if(it->second.getLastView().semantic != 1u) {
                 ++n_non_car;
@@ -355,10 +355,14 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     normalizeEigenFeatures(&target_matrix_);
   }
 
+  LOG(INFO) << "described target = " << (float)target_matrix_.rows() / target_cloud.size();
+  // LOG(INFO) << "features mean = " << target_matrix_.colwise().mean();
+  // LOG(INFO) << "features stddev = " << ((target_matrix_.array().rowwise() - target_matrix_.array().colwise().mean()).square().colwise().mean()).sqrt();
+
   target_matrix_.transposeInPlace();
   nns_ = NNSearchF::createKDTreeLinearHeap(target_matrix_);
 
-  LOG(INFO) << "Added all features to target";
+  // LOG(INFO) << "Added all features to target";
 }
 
 void OpenCvRandomForest::normalizeEigenFeatures(Eigen::MatrixXd* f) {
