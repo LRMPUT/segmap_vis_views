@@ -335,7 +335,7 @@ class Dataset(object):
             cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH)
             cnt = np.nonzero(cur_mask)[0].size
 
-            if cnt < 200:
+            if cnt < 50:
                 keep[i] = False
 
         self._trim_data(keep)

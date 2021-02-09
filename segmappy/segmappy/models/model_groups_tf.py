@@ -284,7 +284,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     # training
     if triplet > 0:
         LOSS_R_WEIGHT = 1
-        LOSS_C_WEIGHT = 1
+        LOSS_C_WEIGHT = 100
     else:
         LOSS_R_WEIGHT = 200
         LOSS_C_WEIGHT = 1
