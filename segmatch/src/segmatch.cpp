@@ -101,8 +101,10 @@ void SegMatch::processAndSetAsSourceCloud(
   BENCHMARK_STOP("SM.Worker.Describe");
   BENCHMARK_RECORD_VALUE("SM.TargetMapSegments", segmented_target_cloud_.size());
 
+  // LOG(INFO) << "\n";
   int desc_cnt = 0;
   for (auto it = segmented_source_clouds_[track_id].begin(); it != segmented_source_clouds_[track_id].end(); ++it) {
+    // LOG(INFO) << "id = " << it->second.segment_id;
     if (it->second.getLastView().features.size() > 0) {
       ++desc_cnt;
     }

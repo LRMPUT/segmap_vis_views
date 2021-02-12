@@ -82,13 +82,13 @@ SegMapper: {
     Descriptors: {
 #      descriptor_types: ["CNN", "EigenvalueBased"],
       descriptor_types: ["CNN"],
-#      use_vis_views: true,
-      use_vis_views: false,
+      use_vis_views: true,
+#      use_vis_views: false,
     },
 
     Classifier: {
      threshold_to_accept_match: 0.65,
-     n_nearest_neighbours: 25, #25
+     n_nearest_neighbours: 10, #25
      knn_feature_dim: 64, #32
      enable_two_stage_retrieval: false,
      apply_hard_threshold_on_feature_distance: false,
@@ -97,7 +97,7 @@ SegMapper: {
      normalize_eigen_for_knn: false,
      normalize_eigen_for_hard_threshold: false,
      max_eigen_features_values: [2493.5, 186681.0, 188389.0, 0.3304, 188388.0, 1.0899, 0.9987],
-     do_not_use_cars: true,
+     do_not_use_cars: false,
     },
 
     GeometricConsistency: {
