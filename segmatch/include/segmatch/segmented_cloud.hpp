@@ -76,6 +76,7 @@ struct Segment {
 
   laser_slam::Time bestViewTs = 0;
   int bestViewPts = -1;
+  laser_slam_ros::VisualView::MatrixInt bestMask;
 };
 
 class SegmentedCloud {

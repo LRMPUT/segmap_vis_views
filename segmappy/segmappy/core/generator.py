@@ -50,11 +50,11 @@ class Generator(object):
             if self.largest:
                 for (c, class_seg_ids) in self.class_to_segment_id.items():
                     if len(class_seg_ids) >= self.triplet:
-                        sizes = [(len(self.preprocessor.segments[id]), id) in class_seg_ids]
-                        sizes = sorted(sizes, key=lambda segment: segment[0])
-                        # get last self.triplet segments
-                        sizes = sizes[-self.triplet:]
-                        self.class_to_segment_id[c] = [segment[1] for segment in sizes]
+                        sizes_ids = [(len(self.preprocessor.segments[id]), id) for id in class_seg_ids]
+                        sizes_ids = sorted(sizes_ids, key=lambda segment: segment[0])
+                        # get last self.triplet segments (largest)
+                        sizes_ids = sizes_ids[-self.triplet:]
+                        self.class_to_segment_id[c] = [segment[1] for segment in sizes_ids]
         else:
             self.n_batches = int(np.ceil(float(self.n_segments) / batch_size))
 

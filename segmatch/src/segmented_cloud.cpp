@@ -375,6 +375,7 @@ void SegmentedCloud::findBestVisViews() {
           if (cnt > segment.second.bestViewPts) {
             segment.second.bestViewPts = cnt;
             segment.second.bestViewTs = vis_view.getTime();
+            segment.second.bestMask = mask;
           }
         }
       }

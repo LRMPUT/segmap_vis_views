@@ -216,7 +216,8 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
       }
       CHECK_GE(bestV, 0);
       // Could be precomputed, but would need extra memory
-      laser_slam_ros::VisualView::MatrixInt mask = visViews[bestV].getMask(it->second.getLastView().point_cloud);
+      // laser_slam_ros::VisualView::MatrixInt mask = visViews[bestV].getMask(it->second.getLastView().point_cloud);
+      laser_slam_ros::VisualView::MatrixInt mask = it->second.bestMask;
       const laser_slam_ros::VisualView::Matrix &intensity = visViews[bestV].getIntensity();
       const laser_slam_ros::VisualView::Matrix &range = visViews[bestV].getRange();
       float meanMaskRange = 0.0f;
