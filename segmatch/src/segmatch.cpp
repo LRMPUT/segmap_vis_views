@@ -91,9 +91,17 @@ void SegMatch::processAndSetAsSourceCloud(
   segmented_source_clouds_[track_id].setLinkPoseOfSegments(latest_pose.T_w);
   segmented_source_clouds_[track_id].setTrackId(track_id);
 
+  BENCHMARK_START("SM.Worker.VisViews");
+  BENCHMARK_START("SM.Worker.VisViews.Clear");
   segmented_source_clouds_[track_id].clearFarVisViews();
+  BENCHMARK_STOP("SM.Worker.VisViews.Clear");
+  BENCHMARK_START("SM.Worker.VisViews.Add");
   segmented_source_clouds_[track_id].addVisViews(local_map.getVisViews());
+  BENCHMARK_STOP("SM.Worker.VisViews.Add");
+  BENCHMARK_START("SM.Worker.VisViews.Find");
   segmented_source_clouds_[track_id].findBestVisViews();
+  BENCHMARK_STOP("SM.Worker.VisViews.Find");
+  BENCHMARK_STOP("SM.Worker.VisViews");
 
   // Describe the cloud.
   BENCHMARK_START("SM.Worker.Describe");

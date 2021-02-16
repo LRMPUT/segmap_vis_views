@@ -13,7 +13,8 @@ class Generator(object):
         train=True,
         batch_size=16,
         shuffle=False,
-        triplet=0
+        triplet=0,
+        largest=False
     ):
         self.preprocessor = preprocessor
         self.segment_ids = segment_ids
@@ -22,6 +23,7 @@ class Generator(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.triplet = triplet
+        self.largest = largest
 
         self.n_segments = len(self.segment_ids)
 
@@ -44,6 +46,15 @@ class Generator(object):
             self.idxs = {c: 0 for c in self.classes}
 
             self.n_batches = len(self.classes) // self.batch_classes
+
+            if self.largest:
+                for (c, class_seg_ids) in self.class_to_segment_id.items():
+                    if len(class_seg_ids) >= self.triplet:
+                        sizes = [(len(self.preprocessor.segments[id]), id) in class_seg_ids]
+                        sizes = sorted(sizes, key=lambda segment: segment[0])
+                        # get last self.triplet segments
+                        sizes = sizes[-self.triplet:]
+                        self.class_to_segment_id[c] = [segment[1] for segment in sizes]
         else:
             self.n_batches = int(np.ceil(float(self.n_segments) / batch_size))
 
@@ -78,7 +89,6 @@ class Generator(object):
             if self.shuffle and self._i == 0:
                 np.random.shuffle(self.segment_ids)
 
-            # TODO Check if this is correct during last batch
             self.batch_ids = self.segment_ids[self._i : self._i + self.batch_size]
 
             self._i = self._i + self.batch_size
