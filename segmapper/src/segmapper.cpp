@@ -301,7 +301,9 @@ void SegMapper::segMatchThread() {
             // LOG(INFO) << "pt_bb = " << filtered_matches[m].centroids_.first.getVector3fMap().transpose();
             // LOG(INFO) << "pt_ba = " << ((Eigen::Vector3d)(loop_closure.T_a_b * filtered_matches[m].centroids_.first.getVector3fMap().cast<double>())).transpose();
             loopClosuresFile << (filtered_matches[m].features1_ - filtered_matches[m].features2_).norm() << " "
+                             << filtered_matches[m].tss_.first << " "
                              << pt_a.x() << " " << pt_a.y() << " " << pt_a.z() << " "
+                             << filtered_matches[m].tss_.second << " "
                              << pt_b.x() << " " << pt_b.y() << " " << pt_b.z() << std::endl;
           }
         }

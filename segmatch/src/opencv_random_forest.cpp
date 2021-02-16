@@ -210,6 +210,8 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
         if (source_segment.segment_id != target_segment_ids_[indices[i]]) {
           PairwiseMatch match(source_segment.segment_id,
                               target_segment_ids_[indices[i]],
+                              source_segment.getLastView().timestamp_ns,
+                              target_segment_ts_[indices[i]],
                               source_segment.getLastView().centroid,
                               target_segment_centroids_[indices[i]], 1.0);
           match.features1_ = features_source;
