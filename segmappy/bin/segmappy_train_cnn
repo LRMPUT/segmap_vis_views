@@ -259,7 +259,8 @@ gen_train = Generator(
     train=True,
     batch_size=config.batch_size,
     shuffle=True,
-    triplet=config.triplet
+    triplet=config.triplet,
+    largest=True
 )
 gen_test = Generator(
     preprocessor,
@@ -268,7 +269,8 @@ gen_test = Generator(
     train=False,
     batch_size=config.batch_size,
     shuffle=True,
-    triplet=config.triplet
+    triplet=config.triplet,
+    largest=True
 )
 
 # print("Training with %d classes and %d segments" % (len(gen_train.classes), gen_train.n_segments))

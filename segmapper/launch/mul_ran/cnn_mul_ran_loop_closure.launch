@@ -6,8 +6,8 @@
   <arg name="root_dir" default="/mnt/data/datasets/JW/MulRan" />
 
   <!-- Bag file path -->
-<!--  <arg name="bag_file" value="$(arg root_dir)/DCC03/DCC03.bag" />-->
-  <arg name="bag_file" value="$(arg root_dir)/KAIST02/KAIST02.bag"/>
+  <arg name="bag_file" value="$(arg root_dir)/DCC03/DCC03.bag" />
+<!--  <arg name="bag_file" value="$(arg root_dir)/KAIST02/KAIST02.bag"/>-->
 <!--  <arg name="bag_file" value="$(arg root_dir)/Riverside01/Riverside01.bag"/>-->
   <rosparam param="LaserMapper/bag_file" subst_value="True">$(arg bag_file)</rosparam>
 
@@ -22,8 +22,8 @@
   <node name="visualizer" pkg="rviz" type="rviz" output="screen" respawn="$(arg respawn_value)" args="-d $(arg rviz_config_file)" />
 
   <!-- CNN model path -->
-  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_wo_vis_views/"/>
-<!--  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_w_vis_views/"/>-->
+<!--  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_wo_vis_views/"/>-->
+  <arg name="cnn_model_path" value="$(arg root_dir)/segmap/trained_models/segmap64_w_vis_views/"/>
   <rosparam param="/SegMapper/SegMatchWorker/SegMatch/Descriptors/cnn_model_path" subst_value="True">$(arg cnn_model_path)</rosparam>
 
   <!-- Semantics nn path -->

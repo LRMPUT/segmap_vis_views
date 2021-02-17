@@ -132,7 +132,7 @@ bool ensureDirectoryExists(const std::string& directory) {
     if(boost::filesystem::exists(path)) {
       return true;
     }
-    if(boost::filesystem::create_directory(path)) {
+    if(boost::filesystem::create_directories(path)) {
       LOG(WARNING) << "Directory Created: " << directory;
       return true;
     }

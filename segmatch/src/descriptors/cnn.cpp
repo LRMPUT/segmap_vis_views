@@ -303,7 +303,7 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
 
         char filename[100];
         // sprintf(filename, "%06ld_%03d", segment_id, view_idx);
-        sprintf(filename, "%l_%l", it->second.getLastView().timestamp_ns, it->second.bestViewTs);
+        sprintf(filename, "%ld_%ld", it->second.getLastView().timestamp_ns, it->second.bestViewTs);
         cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_int.png"))).string(), intensityMat);
         cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_range.png"))).string(), rangeMat);
         cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_mask.png"))).string(), maskMat);
