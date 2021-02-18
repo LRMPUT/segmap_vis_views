@@ -14,7 +14,7 @@ configfile = "default_training.ini"
 config = Config(configfile)
 
 # tweak config parameters
-config.folder = "dataset18"
+config.folder = "DCC01"
 config.use_matches = False
 
 # False: will go through unlabeled segments and append to the csv file

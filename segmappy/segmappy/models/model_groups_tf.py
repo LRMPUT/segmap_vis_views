@@ -184,26 +184,34 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
         inputs=dropout_dense1,
         units=64,
         kernel_initializer=tf.contrib.layers.xavier_initializer(),
-        activation=tf.nn.relu,
+        activation=None,
         use_bias=True,
         name="descriptor",
     )
 
+    relu_descriptor = tf.nn.relu(descriptor)
+
     bn_descriptor = tf.layers.batch_normalization(
-        descriptor, training=training, name="bn_descriptor"
+        relu_descriptor, training=training, name="bn_descriptor"
     )
 
     with tf.name_scope("OutputScope") as scope:
         tf.add(bn_descriptor, 0, name="descriptor_bn_read")
-        tf.add(descriptor, 0, name="descriptor_read")
 
     if triplet > 0:
+        norm_descriptor = tf.linalg.l2_normalize(descriptor, axis=1)
+        with tf.name_scope("OutputScope") as scope:
+            tf.add(norm_descriptor, 0, name="descriptor_read")
+
         y_true_label = tf.math.argmax(y_true, axis=1)
         loss_c = tf.identity(tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true_label,
-                                                                                     descriptor,
+                                                                                     norm_descriptor,
                                                                                      0.1),
                              name="loss_c")
     else:
+        with tf.name_scope("OutputScope") as scope:
+            tf.add(relu_descriptor, 0, name="descriptor_read")
+
         dropout_descriptor = tf.layers.dropout(
             bn_descriptor, rate=0.35, training=training, name="dropout_descriptor"
         )
@@ -225,7 +233,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
 
     # reconstruction network
     dec_dense1 = tf.layers.dense(
-        inputs=descriptor,
+        inputs=relu_descriptor,
         units=8192,
         kernel_initializer=tf.contrib.layers.xavier_initializer(),
         activation=tf.nn.relu,
