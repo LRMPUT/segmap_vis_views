@@ -11,7 +11,6 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 def plot_heatmap_img(batch_segments,
                      batch_vis_views,
-                     batch_classes,
                      batch_scales,
                      batch_conv_vis,
                      batch_descriptor,
@@ -19,7 +18,6 @@ def plot_heatmap_img(batch_segments,
                      cnn_descriptor,
                      cnn_input,
                      cnn_input_vis,
-                     cnn_y_true,
                      cnn_scales
                      ):
 
@@ -46,7 +44,6 @@ def plot_heatmap_img(batch_segments,
                 feed_dict={
                     cnn_input: batch_segments,
                     cnn_input_vis: cur_batch_vis_views,
-                    cnn_y_true: batch_classes,
                     cnn_scales: batch_scales,
                 },
         )
@@ -59,20 +56,22 @@ def plot_heatmap_img(batch_segments,
     heatmap = batch_conv_vis * weights[:, np.newaxis, np.newaxis, :]
     heatmap = np.sum(heatmap, axis=-1)
     img_heatmap_np = np.zeros(intensity.shape + (3,), dtype=np.uint8)
+    val_heatmap_np = np.zeros(intensity.shape, dtype=np.float)
     for b in range(heatmap.shape[0]):
         cur_heatmap = cv2.resize(heatmap[b], (intensity.shape[2], intensity.shape[1]))
         cur_heatmap = np.maximum(cur_heatmap, 0.0)
         cur_heatmap = cur_heatmap / np.max(cur_heatmap)
-        cur_heatmap = cv2.applyColorMap(np.uint8(255 * cur_heatmap), cv2.COLORMAP_JET)
-        cur_heatmap = cv2.cvtColor(cur_heatmap, cv2.COLOR_BGR2RGB)
-        cur_img_heatmap = 0.25 * cur_heatmap + \
+        cur_heatmap_color = cv2.applyColorMap(np.uint8(255 * cur_heatmap), cv2.COLORMAP_JET)
+        cur_heatmap_color = cv2.cvtColor(cur_heatmap_color, cv2.COLOR_BGR2RGB)
+        cur_img_heatmap = 0.25 * cur_heatmap_color + \
                           0.75 * np.tile(np.expand_dims(np.minimum(intensity[b] * 255.0 / 1500.0, 255.0), axis=-1),
                                   [1, 1, 3])
 
         cur_img_heatmap[mask[b] > 128.0, :] = np.array([255, 0, 0], dtype=np.uint8)
         img_heatmap_np[b] = cur_img_heatmap
+        val_heatmap_np[b] = cur_heatmap
 
-    return img_heatmap_np, scores
+    return img_heatmap_np, val_heatmap_np, scores
 
 
 def resize_voxels(voxels, size):

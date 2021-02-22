@@ -21,6 +21,7 @@ class Dataset(object):
         require_diff_points=0,
         normalize_classes=True,
         use_visual=False,
+        remove_poorly_visible=True,
         largest_vis_view=False
     ):
         abs_folder = os.path.abspath(os.path.join(base_dir, folder))
@@ -39,11 +40,12 @@ class Dataset(object):
         self.require_diff_points = require_diff_points
         self.normalize_classes = normalize_classes
         self.use_visual = use_visual
+        self.remove_poorly_visible = remove_poorly_visible
         self.largest_vis_view = largest_vis_view
 
     # load the segment dataset
     def load(self, preprocessor=None):
-        from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views
+        from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views, load_timestamps
 
         print("Loading dataset from folder", self.folder)
 
@@ -54,6 +56,11 @@ class Dataset(object):
             folder=self.folder
         )
         self.int_paths, self.mask_paths, self.range_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
+        self.timestamps, tids, duplicate_tids = load_timestamps(folder=self.folder)
+
+        for i in range(len(sids)):
+            if sids[i] != tids[i] or duplicate_sids[i] != duplicate_tids[i]:
+                raise Exception("Error sids[i] != tids[i] or duplicate_sids[i] != duplicate_tids[i]")
 
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
         vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
@@ -101,7 +108,8 @@ class Dataset(object):
             assert preprocessor is not None
             self._remove_similar(preprocessor)
 
-        self._remove_poorly_visible()
+        if self.remove_poorly_visible:
+            self._remove_poorly_visible()
 
         if self.largest_vis_view:
             self.  _select_largest_vis_views()
@@ -135,7 +143,8 @@ class Dataset(object):
             self.labels_dict,
             self.int_paths,
             self.mask_paths,
-            self.range_paths
+            self.range_paths,
+            self.timestamps
         )
 
     def _remove_unchanged(self):
@@ -384,6 +393,8 @@ class Dataset(object):
             self.mask_paths = [self.mask_paths[i] for i in ordered_ids]
         if len(self.range_paths) > 0:
             self.range_paths = [self.range_paths[i] for i in ordered_ids]
+        if self.timestamps.size > 0:
+            self.timestamps = self.timestamps[ordered_ids]
 
         self.duplicate_ids = self.duplicate_ids[ordered_ids]
         self.duplicate_classes = self.duplicate_classes[ordered_ids]
@@ -403,6 +414,8 @@ class Dataset(object):
             self.mask_paths = [mask_path for (k, mask_path) in zip(keep, self.mask_paths) if k]
         if len(self.range_paths) > 0:
             self.range_paths = [range_path for (k, range_path) in zip(keep, self.range_paths) if k]
+        if self.timestamps.size > 0:
+            self.timestamps = self.timestamps[keep]
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]

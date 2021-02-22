@@ -31,10 +31,10 @@ dataset = Dataset(
     folder=config.cnn_test_folder,
     base_dir=config.base_dir,
     keep_match_thresh=0.7,
-    # largest_vis_view=True
+    largest_vis_view=True
 )
 
-segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths, range_paths = dataset.load()
+segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths, range_paths, timestamps = dataset.load()
 duplicate_classes = dataset.duplicate_classes
 duplicate_ids = dataset.duplicate_ids
 

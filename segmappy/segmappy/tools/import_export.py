@@ -59,7 +59,7 @@ def load_segments_no_duplicates(
     from pandas import read_csv
 
     file_path = os.path.join(folder, filename)
-    extracted_data = read_csv(file_path, delimiter=" ").values
+    extracted_data = read_csv(file_path, delimiter=" ", header=None).values
 
     segment_ids = extracted_data[:, 0].astype(int)
     points = extracted_data[:, 1:]
@@ -75,6 +75,30 @@ def load_segments_no_duplicates(
 
     print("  Found " + str(len(segments)) + " segments.")
     return segments, segment_ids
+
+
+def load_timestamps(folder=database_folder, filename="timestamps_database.csv"):
+    # extract and store point data
+    from pandas import read_csv
+
+    file_path = os.path.join(folder, filename)
+    extracted_data = read_csv(file_path, delimiter=" ", header=None).values
+
+    segment_ids = extracted_data[:, 0].astype(int)
+    duplicate_ids = extracted_data[:, 1].astype(int)
+    timestamps = extracted_data[:, 2].astype(long)
+
+    if len(set(zip(segment_ids, duplicate_ids))) != len(segment_ids):
+        raise ValueError(
+            "Id collision when importing segments. Two segments with same id exist in file."
+        )
+
+    print(
+        "  Found "
+        + str(len(timestamps))
+        + " timestamps"
+    )
+    return timestamps, segment_ids, duplicate_ids
 
 
 def load_positions(folder=database_folder, filename="positions_database.csv"):

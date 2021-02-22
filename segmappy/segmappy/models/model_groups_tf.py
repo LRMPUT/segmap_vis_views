@@ -194,24 +194,21 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     bn_descriptor = tf.layers.batch_normalization(
         relu_descriptor, training=training, name="bn_descriptor"
     )
+    norm_descriptor = tf.linalg.l2_normalize(descriptor, axis=1)
 
     with tf.name_scope("OutputScope") as scope:
         tf.add(bn_descriptor, 0, name="descriptor_bn_read")
-
-    if triplet > 0:
-        norm_descriptor = tf.linalg.l2_normalize(descriptor, axis=1)
-        with tf.name_scope("OutputScope") as scope:
+        if triplet > 0:
             tf.add(norm_descriptor, 0, name="descriptor_read")
-
-        y_true_label = tf.math.argmax(y_true, axis=1)
-        loss_c = tf.identity(tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true_label,
-                                                                                     norm_descriptor,
-                                                                                     0.1),
-                             name="loss_c")
-    else:
-        with tf.name_scope("OutputScope") as scope:
+        else:
             tf.add(relu_descriptor, 0, name="descriptor_read")
 
+    if triplet > 0:
+        y_true_label = tf.math.argmax(y_true, axis=1)
+        loss_c = tf.identity(tf.contrib.losses.metric_learning.triplet_semihard_loss(y_true_label,
+                                                                                     norm_descriptor),
+                             name="loss_c")
+    else:
         dropout_descriptor = tf.layers.dropout(
             bn_descriptor, rate=0.35, training=training, name="dropout_descriptor"
         )
@@ -292,7 +289,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     # training
     if triplet > 0:
         LOSS_R_WEIGHT = 1
-        LOSS_C_WEIGHT = 100
+        LOSS_C_WEIGHT = 1
     else:
         LOSS_R_WEIGHT = 200
         LOSS_C_WEIGHT = 1
@@ -315,7 +312,7 @@ def init_model(input_shape, input_shape_vis, n_classes, vis_views=False, triplet
     # y_prob = tf.nn.softmax(y_pred, name="y_prob")
 
     if triplet > 0:
-        accuracy = tf.identity(loss_c, name="accuracy")
+        accuracy = tf.identity(-loss_c, name="accuracy")
     else:
         correct_pred = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y_true, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name="accuracy")

@@ -9,26 +9,27 @@ import ensure_segmappy_is_installed
 from segmappy import Dataset
 from segmappy import Config
 from segmappy.tools.classifiertools import get_default_dataset
+from segmappy.core.config import get_default_dataset_dir
 
 configfile = "default_training.ini"
 config = Config(configfile)
 
 # tweak config parameters
-config.folder = "DCC01"
+config.folder = "DCC03"
 config.use_matches = False
 
 # False: will go through unlabeled segments and append to the csv file
 # True: will go through the segments labeled as CLASS and
 #       rewrite the database at the end
-RELABEL = True
+RELABEL = False
 AUTOWALLS = False
 CLASS = 1
 CLASSES = ["other", "car", "building"]
 
 # load dataset
-dataset = get_default_dataset(config)
+dataset = get_default_dataset(config, config.folder)
 
-segments, _, ids, n_ids, features, matches, _ = dataset.load()
+segments, _, ids, n_ids, features, matches, _, int_paths, mask_paths, range_paths, _ = dataset.load()
 
 lids = dataset.lids
 lids_lookup = dict()
@@ -42,7 +43,7 @@ if RELABEL:
     print("There are " + str(n_objects) + " " + CLASSES[CLASS] + "(s).")
 else:
     default_label = 0
-    fp_labels = open(os.path.join(config.folder, "labels_database.csv"), "a")
+    fp_labels = open(os.path.join(get_default_dataset_dir(), config.folder, "labels_database.csv"), "a")
 
 print("Default is " + str(default_label) + ":" + CLASSES[default_label] + ".")
 print("Type q and then ENTER to quit.")
@@ -72,7 +73,15 @@ for i in range(ids.size):
     ax.set_zlim(0, np.max(segment[:, :]))
 
     x, y, z = np.hsplit(segment, segment.shape[1])
-    ax.scatter(x, y, z, c=z)
+    ax.scatter(x[:, 0], y[:, 0], z[:, 0], c=z[:, 0])
+
+    # # Hide grid lines
+    # ax.grid(False)
+    #
+    # # Hide axes ticks
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # ax.set_zticks([])
 
     ax = fig.add_subplot(122)
     ax.scatter(x, y)

@@ -262,52 +262,52 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
         }
       }
 
-      if (true) {
-        std::string dir("/tmp/online_matcher/debug");
-        // const laser_slam_ros::VisualView::Matrix &intensity = visViews[bestV].getIntensity();
-        // const laser_slam_ros::VisualView::Matrix &range = visViews[bestV].getRange();
-        // const laser_slam_ros::VisualView::MatrixInt &mask = vis_view.getMask(segment_view.point_cloud);
-
-        std::string segmentDir = dir;
-        {
-          char dirname[100];
-          sprintf(dirname, "%06ld", it->second.segment_id);
-          segmentDir = (boost::filesystem::path(dir) / std::string(dirname)).string();
-          database::ensureDirectoryExists(segmentDir);
-        }
-
-        cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
-        cv::Mat rangeMat(range.rows(), range.cols(), CV_16UC1, cv::Scalar(0));
-        // cv::Mat intensityMono(intensity.rows(), intensity.cols(), CV_8UC1, cv::Scalar(0));
-        cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
-        for (int r = 0; r < intensity.rows(); ++r) {
-          for (int c = 0; c < intensity.cols(); ++c) {
-            // KITTI
-            // intensityMat.at<uint16_t>(r, c) = intensity(r, c)*65535.0f;
-            // MulRan
-            intensityMat.at<uint16_t>(r, c) = intensity(r, c);
-            // intensityMono.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
-            // up to 65.535 * 2 m
-            rangeMat.at<uint16_t>(r, c) = std::min(range(r, c) * 500.0f, 65535.0f);
-          }
-        }
-        for (int r = 0; r < mask.rows(); ++r) {
-          for (int c = 0; c < mask.cols(); ++c) {
-            if (mask(r, c) > 0) {
-              maskMat.at<uint8_t>(r, c) = 255;
-            } else {
-              maskMat.at<uint8_t>(r, c) = 0;
-            }
-          }
-        }
-
-        char filename[100];
-        // sprintf(filename, "%06ld_%03d", segment_id, view_idx);
-        sprintf(filename, "%ld_%ld", it->second.getLastView().timestamp_ns, it->second.bestViewTs);
-        cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_int.png"))).string(), intensityMat);
-        cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_range.png"))).string(), rangeMat);
-        cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_mask.png"))).string(), maskMat);
-      }
+      // if (true) {
+      //   std::string dir("/tmp/online_matcher/debug");
+      //   // const laser_slam_ros::VisualView::Matrix &intensity = visViews[bestV].getIntensity();
+      //   // const laser_slam_ros::VisualView::Matrix &range = visViews[bestV].getRange();
+      //   // const laser_slam_ros::VisualView::MatrixInt &mask = vis_view.getMask(segment_view.point_cloud);
+      //
+      //   std::string segmentDir = dir;
+      //   {
+      //     char dirname[100];
+      //     sprintf(dirname, "%06ld", it->second.segment_id);
+      //     segmentDir = (boost::filesystem::path(dir) / std::string(dirname)).string();
+      //     database::ensureDirectoryExists(segmentDir);
+      //   }
+      //
+      //   cv::Mat intensityMat(intensity.rows(), intensity.cols(), CV_16UC1, cv::Scalar(0));
+      //   cv::Mat rangeMat(range.rows(), range.cols(), CV_16UC1, cv::Scalar(0));
+      //   // cv::Mat intensityMono(intensity.rows(), intensity.cols(), CV_8UC1, cv::Scalar(0));
+      //   cv::Mat maskMat(mask.rows(), mask.cols(), CV_8UC1, cv::Scalar(0));
+      //   for (int r = 0; r < intensity.rows(); ++r) {
+      //     for (int c = 0; c < intensity.cols(); ++c) {
+      //       // KITTI
+      //       // intensityMat.at<uint16_t>(r, c) = intensity(r, c)*65535.0f;
+      //       // MulRan
+      //       intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+      //       // intensityMono.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
+      //       // up to 65.535 * 2 m
+      //       rangeMat.at<uint16_t>(r, c) = std::min(range(r, c) * 500.0f, 65535.0f);
+      //     }
+      //   }
+      //   for (int r = 0; r < mask.rows(); ++r) {
+      //     for (int c = 0; c < mask.cols(); ++c) {
+      //       if (mask(r, c) > 0) {
+      //         maskMat.at<uint8_t>(r, c) = 255;
+      //       } else {
+      //         maskMat.at<uint8_t>(r, c) = 0;
+      //       }
+      //     }
+      //   }
+      //
+      //   char filename[100];
+      //   // sprintf(filename, "%06ld_%03d", segment_id, view_idx);
+      //   sprintf(filename, "%ld_%ld", it->second.getLastView().timestamp_ns, it->second.bestViewTs);
+      //   cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_int.png"))).string(), intensityMat);
+      //   cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_range.png"))).string(), rangeMat);
+      //   cv::imwrite((boost::filesystem::path(segmentDir) / (filename + std::string("_mask.png"))).string(), maskMat);
+      // }
     }
 
     batch_nn_input_vis.push_back(nn_input_vis);
