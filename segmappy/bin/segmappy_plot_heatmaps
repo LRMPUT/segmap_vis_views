@@ -37,10 +37,10 @@ dataset = Dataset(
     folder=config.cnn_test_folder,
     base_dir=config.base_dir,
     keep_match_thresh=0.7,
-    use_merges=False,
-    use_matches=False,
-    normalize_classes=False,
-    remove_poorly_visible=False,
+    # use_merges=False,
+    # use_matches=False,
+    # normalize_classes=False,
+    # remove_poorly_visible=False,
     largest_vis_view=True
 )
 

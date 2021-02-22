@@ -206,6 +206,8 @@ last_sequences = duplicate_classes[last_ids]
 
 all_ranks = []
 all_sizes = []
+all_seq_ids = []
+all_view_ids = []
 
 n_sets = len(feature_sets)
 for s in range(n_sets):
@@ -214,6 +216,8 @@ for s in range(n_sets):
 
     ranks = []
     sizes = []
+    seq_ids = []
+    view_ids = []
     for cls in test_classes:
         sequences = duplicate_classes[classes == cls]
         unique_sequences = np.unique(sequences)
@@ -241,9 +245,30 @@ for s in range(n_sets):
                 sizes.append(
                     float(segments[segment_id].shape[0]) / last_sizes[sequence]
                 )
+                seq_ids.append(duplicate_classes[segment_id])
+                view_ids.append(duplicate_ids[segment_id])
 
     all_ranks.append(ranks)
     all_sizes.append(sizes)
+    all_seq_ids.append(seq_ids)
+    all_view_ids.append(view_ids)
+
+
+ranks_file = os.path.join(config.base_dir, config.cnn_test_folder, "ranks.log")
+print("Writing ranks to file: ", ranks_file)
+with open(ranks_file, 'w') as rf:
+    ranks = np.array(all_ranks[-1])
+    seq_ids = np.array(all_seq_ids[-1])
+    view_ids = np.array(all_view_ids[-1])
+
+    idxs = np.argsort(ranks)
+    ranks = ranks[idxs]
+    seq_ids = seq_ids[idxs]
+    view_ids = view_ids[idxs]
+
+    for i in range(len(ranks)):
+        rf.write("%06d %03d %06d\n" % (seq_ids[i], view_ids[i], ranks[i]))
+
 
 bin_edges = np.linspace(1.0/10, 1, 10)
 
