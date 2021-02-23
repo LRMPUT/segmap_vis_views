@@ -45,7 +45,7 @@ class Dataset(object):
 
     # load the segment dataset
     def load(self, preprocessor=None):
-        from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views
+        from ..tools.import_export import load_segments, load_positions, load_features, load_vis_views, load_timestamps
 
         print("Loading dataset from folder", self.folder)
 
@@ -56,6 +56,11 @@ class Dataset(object):
             folder=self.folder
         )
         self.int_paths, self.mask_paths, self.range_paths, vids, duplicate_vids = load_vis_views(folder=self.folder)
+        self.timestamps, tids, duplicate_tids = load_timestamps(folder=self.folder)
+
+        for i in range(len(sids)):
+            if sids[i] != tids[i] or duplicate_sids[i] != duplicate_tids[i]:
+                raise Exception("Error sids[i] != tids[i] or duplicate_sids[i] != duplicate_tids[i]")
 
         complete_id_to_vidx = {(sid, dsid): vidx for vidx, (sid, dsid) in enumerate(zip(vids, duplicate_vids))}
         vorder = [complete_id_to_vidx[csid] for csid in zip(sids, duplicate_sids)]
@@ -107,7 +112,7 @@ class Dataset(object):
             self._remove_poorly_visible()
 
         if self.largest_vis_view:
-            self._select_largest_vis_views()
+            self.  _select_largest_vis_views()
 
         # combine classes based on matches
         if self.use_matches:
@@ -138,7 +143,8 @@ class Dataset(object):
             self.labels_dict,
             self.int_paths,
             self.mask_paths,
-            self.range_paths
+            self.range_paths,
+            self.timestamps
         )
 
     def _remove_unchanged(self):
@@ -338,7 +344,7 @@ class Dataset(object):
             cur_mask = cv2.imread(self.mask_paths[i], cv2.IMREAD_ANYDEPTH)
             cnt = np.nonzero(cur_mask)[0].size
 
-            if cnt < 200:
+            if cnt < 50:
                 keep[i] = False
 
         self._trim_data(keep)
@@ -387,6 +393,8 @@ class Dataset(object):
             self.mask_paths = [self.mask_paths[i] for i in ordered_ids]
         if len(self.range_paths) > 0:
             self.range_paths = [self.range_paths[i] for i in ordered_ids]
+        if self.timestamps.size > 0:
+            self.timestamps = self.timestamps[ordered_ids]
 
         self.duplicate_ids = self.duplicate_ids[ordered_ids]
         self.duplicate_classes = self.duplicate_classes[ordered_ids]
@@ -406,6 +414,8 @@ class Dataset(object):
             self.mask_paths = [mask_path for (k, mask_path) in zip(keep, self.mask_paths) if k]
         if len(self.range_paths) > 0:
             self.range_paths = [range_path for (k, range_path) in zip(keep, self.range_paths) if k]
+        if self.timestamps.size > 0:
+            self.timestamps = self.timestamps[keep]
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]
@@ -468,8 +478,8 @@ class Dataset(object):
                 prev_id = id
 
             cur_mask = cv2.imread(self.mask_paths[idx], cv2.IMREAD_ANYDEPTH)
-            cur_mask = cv2.dilate(cur_mask, 5)
-            cur_mask = cv2.erode(cur_mask, 5)
+            # cur_mask = cv2.dilate(cur_mask, 5)
+            # cur_mask = cv2.erode(cur_mask, 5)
             cur_size = np.nonzero(cur_mask)[0].size
             if cur_size > largest_size:
                 largest_size = cur_size

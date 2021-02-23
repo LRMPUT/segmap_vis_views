@@ -44,6 +44,7 @@ class OpenCvRandomForest {
   std::vector<Id> target_segment_ids_;
   std::vector<PclPoint> target_segment_centroids_;
   std::vector<Eigen::MatrixXd> target_segment_features_;
+  std::vector<int64_t> target_segment_ts_;
 
   SegmentedCloud target_cloud_;
 

@@ -8,7 +8,7 @@ SegMapper: {
   publish_world_to_odom: true,
   tf_publication_rate_hz: 10,
   
-  export_loop_closures: false,
+  export_loop_closures: true,
     
   LaserSlamWorker: {
     use_odometry_information: true,
@@ -45,7 +45,7 @@ SegMapper: {
   
   ratio_of_points_to_keep_when_publishing: 1.0,
   
-  export_segments_and_matches: true,
+  export_segments_and_matches: false,
   publish_predicted_segment_matches: false,
   
   line_scale_loop_closures: 5.0,
@@ -80,8 +80,10 @@ SegMapper: {
     },
 
     Descriptors: {
-      descriptor_types: ["CNN", "EigenvalueBased"],
+#      descriptor_types: ["CNN", "EigenvalueBased"],
+      descriptor_types: ["CNN"],
       use_vis_views: true,
+#      use_vis_views: false,
     },
 
     Classifier: {
@@ -95,7 +97,7 @@ SegMapper: {
      normalize_eigen_for_knn: false,
      normalize_eigen_for_hard_threshold: false,
      max_eigen_features_values: [2493.5, 186681.0, 188389.0, 0.3304, 188388.0, 1.0899, 0.9987],
-     do_not_use_cars: true,
+     do_not_use_cars: false,
     },
 
     GeometricConsistency: {

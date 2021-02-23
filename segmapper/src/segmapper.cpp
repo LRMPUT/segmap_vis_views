@@ -198,6 +198,9 @@ void SegMapper::segMatchThread() {
 
     // Update the local map with the new points and the new pose.
     Pose current_pose = incremental_estimator_->getCurrentPose(track_id);
+    // if (!new_points_and_views.second.empty()) {
+    //   current_pose = incremental_estimator_->getLaserTrack(track_id)->findNearestPose(new_points_and_views.second.back().getTime());
+    // }
     {
       std::lock_guard<std::mutex> map_lock(local_maps_mutexes_[track_id]);
       local_maps_[track_id].updatePoseAndAddPoints(new_points_and_views.first,
@@ -235,31 +238,31 @@ void SegMapper::segMatchThread() {
           SE3 T_w_b = incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->evaluate(loop_closure.time_b_ns);
           SE3 a_T_a_b = T_w_a.inverse() * w_T_a_b * T_w_b;
 
-          if (true) {
-            // Get the initial guess.
-            laser_slam::PointMatcher::TransformationParameters initial_guess = a_T_a_b.getTransformationMatrix().cast<float>();
-
-            LOG(INFO) << "Creating the submaps for loop closure ICP.";
-            Clock clock;
-            DataPoints sub_map_a;
-            DataPoints sub_map_b;
-            incremental_estimator_->getLaserTrack(loop_closure.track_id_a)->buildSubMapAroundTime(
-                loop_closure.time_a_ns, 3, &sub_map_a);
-            incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->buildSubMapAroundTime(
-                loop_closure.time_b_ns, 3, &sub_map_b);
-            clock.takeTime();
-            LOG(INFO) << "Took " << clock.getRealTime() << " ms to create loop closures sub maps.";
-
-            LOG(INFO) << "Creating loop closure ICP.";
-            clock.start();
-            laser_slam::PointMatcher::TransformationParameters icp_solution =
-                incremental_estimator_->getIcp().compute(sub_map_b, sub_map_a, initial_guess);
-            clock.takeTime();
-            LOG(INFO) << "Took " << clock.getRealTime() <<
-                      " ms to compute the icp_solution for the loop closure.";
-
-            a_T_a_b = convertTransformationMatrixToSE3(icp_solution);
-          }
+          // if (true) {
+          //   // Get the initial guess.
+          //   laser_slam::PointMatcher::TransformationParameters initial_guess = a_T_a_b.getTransformationMatrix().cast<float>();
+          //
+          //   LOG(INFO) << "Creating the submaps for loop closure ICP.";
+          //   Clock clock;
+          //   DataPoints sub_map_a;
+          //   DataPoints sub_map_b;
+          //   incremental_estimator_->getLaserTrack(loop_closure.track_id_a)->buildSubMapAroundTime(
+          //       loop_closure.time_a_ns, 3, &sub_map_a);
+          //   incremental_estimator_->getLaserTrack(loop_closure.track_id_b)->buildSubMapAroundTime(
+          //       loop_closure.time_b_ns, 3, &sub_map_b);
+          //   clock.takeTime();
+          //   LOG(INFO) << "Took " << clock.getRealTime() << " ms to create loop closures sub maps.";
+          //
+          //   LOG(INFO) << "Creating loop closure ICP.";
+          //   clock.start();
+          //   laser_slam::PointMatcher::TransformationParameters icp_solution =
+          //       incremental_estimator_->getIcp().compute(sub_map_b, sub_map_a, initial_guess);
+          //   clock.takeTime();
+          //   LOG(INFO) << "Took " << clock.getRealTime() <<
+          //             " ms to compute the icp_solution for the loop closure.";
+          //
+          //   a_T_a_b = convertTransformationMatrixToSE3(icp_solution);
+          // }
 
           // hack for loam results
           // rotation from loam to segmap
@@ -298,7 +301,11 @@ void SegMapper::segMatchThread() {
             // LOG(INFO) << "pt_bb = " << filtered_matches[m].centroids_.first.getVector3fMap().transpose();
             // LOG(INFO) << "pt_ba = " << ((Eigen::Vector3d)(loop_closure.T_a_b * filtered_matches[m].centroids_.first.getVector3fMap().cast<double>())).transpose();
             loopClosuresFile << (filtered_matches[m].features1_ - filtered_matches[m].features2_).norm() << " "
+                             << filtered_matches[m].ids_.first << " "
+                             << filtered_matches[m].tss_.first << " "
                              << pt_a.x() << " " << pt_a.y() << " " << pt_a.z() << " "
+                             << filtered_matches[m].ids_.second << " "
+                             << filtered_matches[m].tss_.second << " "
                              << pt_b.x() << " " << pt_b.y() << " " << pt_b.z() << std::endl;
           }
         }
@@ -325,7 +332,7 @@ void SegMapper::segMatchThread() {
         BENCHMARK_STOP("SM.ProcessLoopClosure.GettingLastPoseOfTrajectories");
 
         BENCHMARK_START("SM.ProcessLoopClosure.UpdateIncrementalEstimator");
-        incremental_estimator_->processLoopClosure(loop_closure);
+        // incremental_estimator_->processLoopClosure(loop_closure);
         BENCHMARK_STOP("SM.ProcessLoopClosure.UpdateIncrementalEstimator");
 
         BENCHMARK_START("SM.ProcessLoopClosure.ProcessLocalMap");

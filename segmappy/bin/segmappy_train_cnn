@@ -70,7 +70,7 @@ for run in runs:
     dataset = get_default_dataset(config, run)
 
     [run_segments, _, run_classes, run_n_classes, _, _, _, run_int_paths, run_mask_paths,
-     run_range_paths] = dataset.load(preprocessor=preprocessor)
+     run_range_paths, _] = dataset.load(preprocessor=preprocessor)
     run_duplicate_classes = dataset.duplicate_classes
     run_duplicate_ids = dataset.duplicate_ids
 
@@ -170,7 +170,7 @@ if config.roc:
     )
 
     [roc_segments, roc_positions, roc_classes, roc_n_classes, roc_features, _, _, roc_int_paths, roc_mask_paths,
-     roc_range_paths] = roc_dataset.load(
+     roc_range_paths, _] = roc_dataset.load(
             preprocessor=roc_preprocessor
     )
 
@@ -259,7 +259,9 @@ gen_train = Generator(
     train=True,
     batch_size=config.batch_size,
     shuffle=True,
-    triplet=config.triplet
+    triplet=config.triplet,
+    largest=True,
+    min_class=8
 )
 gen_test = Generator(
     preprocessor,
@@ -268,11 +270,15 @@ gen_test = Generator(
     train=False,
     batch_size=config.batch_size,
     shuffle=True,
-    triplet=config.triplet
+    triplet=config.triplet,
+    largest=True,
+    min_class=8
 )
 
-print("Training with %d segments" % gen_train.n_segments)
-print("Testing with %d segments" % gen_test.n_segments)
+# print("Training with %d classes and %d segments" % (len(gen_train.classes), gen_train.n_segments))
+# print("Testing with %d classes and %d segments" % (len(gen_test.classes), gen_test.n_segments))
+print("Training with %d batches and %d segments" % (gen_train.n_batches, gen_train.n_segments))
+print("Testing with %d batches and %d segments" % (gen_test.n_batches, gen_test.n_segments))
 
 import tensorflow as tf
 

@@ -24,105 +24,61 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--log")
-parser.add_argument("--debug", action="store_true")
-parser.add_argument("--checkpoints", type=int, default=1)
-parser.add_argument("--keep-best", action="store_true")
-parser.add_argument("--roc", action="store_true")
-parser.add_argument("--vis_views", action="store_true")
+parser.add_argument("--heatmap_dir", default="/tmp/segmap/heatmaps/")
 args = parser.parse_args()
 config.log_name = args.log
-config.debug = args.debug
-config.checkpoints = args.checkpoints
-config.keep_best = args.keep_best
-config.roc = args.roc
-config.vis_views = args.vis_views
+config.heatmap_dir = args.heatmap_dir
 
-# create or empty the model folder
-if not os.path.exists(config.cnn_model_folder):
-    os.makedirs(config.cnn_model_folder)
-else:
-    import glob
+if not os.path.exists(config.heatmap_dir):
+    os.makedirs(config.heatmap_dir)
 
-    model_files = glob.glob(os.path.join(config.cnn_model_folder, "*"))
-    for model_file in model_files:
-        os.remove(model_file)
+ranks_data = np.loadtxt("/mnt/data/datasets/JW/MulRan/segmap/training_datasets/DCC03/ranks.log", dtype=np.int)
+nbins = 10
+hist_sum = np.zeros(nbins, dtype=np.float)
+hist_n = np.zeros(nbins, dtype=np.int)
+cid_to_rank = {}
+cid_to_bin = {}
+for i, row in enumerate(ranks_data):
+    cid_to_rank[(row[0], row[1])] = row[2]
+    cid_to_bin[(row[0], row[1])] = float(i) / ranks_data.shape[0] * nbins
 
-# load preprocessor
+
+# load dataset and preprocessor
+dataset = Dataset(
+    folder=config.cnn_test_folder,
+    base_dir=config.base_dir,
+    keep_match_thresh=0.7,
+    # use_merges=False,
+    # use_matches=False,
+    # normalize_classes=False,
+    # remove_poorly_visible=False,
+    largest_vis_view=True
+)
+
+segments, positions, classes, n_classes, _, _, _, int_paths, mask_paths, range_paths, _ = dataset.load()
+duplicate_classes = dataset.duplicate_classes
+duplicate_ids = dataset.duplicate_ids
+
 preprocessor = get_default_preprocessor(config)
-
-segments = []
-classes = np.array([], dtype=np.int)
-n_classes = 0
-duplicate_classes = np.array([], dtype=np.int)
-max_duplicate_class = 0
-duplicate_ids = np.array([], dtype=np.int)
-int_paths = []
-mask_paths = []
-range_paths = []
-
-runs = config.cnn_train_folders.split(",")
-for run in runs:
-    dataset = get_default_dataset(config, run)
-
-    [run_segments, _, run_classes, run_n_classes, _, _, _, run_int_paths, run_mask_paths,
-     run_range_paths] = dataset.load(preprocessor=preprocessor)
-    run_duplicate_classes = dataset.duplicate_classes
-    run_duplicate_ids = dataset.duplicate_ids
-
-    run_classes += n_classes
-    run_duplicate_classes += max_duplicate_class
-
-    segments += run_segments
-    classes = np.concatenate((classes, run_classes), axis=0)
-    n_classes += run_n_classes
-    duplicate_classes = np.concatenate(
-        (duplicate_classes, run_duplicate_classes), axis=0
-    )
-    duplicate_ids = np.concatenate((duplicate_ids, run_duplicate_ids), axis=0)
-    int_paths += run_int_paths
-    mask_paths += run_mask_paths
-    range_paths += run_range_paths
-
-    max_duplicate_class = np.max(duplicate_classes) + 1
-
-# split so that the test set contains entire sequences
-train_fold = np.zeros(classes.shape, dtype=np.int)
-
-train_ids = np.where(train_fold == 1)[0]
-test_ids = np.where(train_fold == 0)[0]
-
-# initialize preprocessor
 preprocessor.init_segments(segments,
                            classes,
-                           train_ids=train_ids,
+                           positions=positions,
                            int_paths=int_paths,
                            mask_paths=mask_paths,
                            range_paths=range_paths)
 
-# save scaler mean in a csv
-if config.remove_mean:
-    scaler_path = os.path.join(config.cnn_model_folder, "scaler_mean.csv")
-    with open(scaler_path, "w") as fp:
-        for i in preprocessor._scaler.mean_:
-            fp.write(str(i) + "\n")
-
-# save the scaler as well using pickle
-if config.remove_mean or config.remove_std:
-    scaler_path = os.path.join(config.cnn_model_folder, "scaler.pkl")
-    preprocessor.save_scaler(scaler_path)
-
-# initialize segment batch generators
+# calculate all feature sets
+feature_sets = []
 
 gen_test = Generator(
     preprocessor,
-    test_ids,
-    n_classes,
+    np.arange(len(segments)),
+    np.max(duplicate_classes) + 1,
     train=False,
     batch_size=config.batch_size,
-    shuffle=True,
+    shuffle=False,
 )
-
-print("Testing with %d segments" % gen_test.n_segments)
+print("Testing with %d segments and %d classes" % (gen_test.n_segments, gen_test.n_classes))
 
 import tensorflow as tf
 
@@ -145,14 +101,19 @@ loss_c = cnn_graph.get_tensor_by_name("loss_c:0")
 loss_r = cnn_graph.get_tensor_by_name("loss_r:0")
 
 accuracy = cnn_graph.get_tensor_by_name("accuracy:0")
-y_prob = cnn_graph.get_tensor_by_name("y_prob:0")
+# y_prob = cnn_graph.get_tensor_by_name("y_prob:0")
 descriptor = cnn_graph.get_tensor_by_name("OutputScope/descriptor_read:0")
 roc_auc = cnn_graph.get_tensor_by_name("roc_auc:0")
 
 #visualization
-conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
-conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
+conv = cnn_graph.get_tensor_by_name("conv3_out:0")
+# conv_vis_grad = cnn_graph.get_tensor_by_name("conv5_vis_grad_out:0")
 img_heatmap = cnn_graph.get_tensor_by_name("img_heatmap:0")
+score = cnn_graph.get_tensor_by_name("score:0")
+
+conv_vis = cnn_graph.get_tensor_by_name("conv5_vis_out:0")
+img_heatmap_vis = cnn_graph.get_tensor_by_name("img_heatmap_vis:0")
+score_vis = cnn_graph.get_tensor_by_name("score_vis:0")
 
 global_step = cnn_graph.get_tensor_by_name("global_step:0")
 update_step = cnn_graph.get_tensor_by_name("update_step:0")
@@ -161,6 +122,7 @@ train_op = cnn_graph.get_operation_by_name("train_op")
 summary_batch = tf.summary.merge_all("summary_batch")
 summary_epoch = tf.summary.merge_all("summary_epoch")
 summary_heatmap = tf.summary.merge_all("summary_heatmap")
+summary_heatmap_vis = tf.summary.merge_all("summary_heatmap_vis")
 
 # os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
@@ -179,9 +141,10 @@ with tf.Session(config=config_tf) as sess:
 
     saver.restore(sess, config.cnn_model_folder_w_vis_views + "/model.ckpt")
 
-    # sequence of train and test batches
+    segment_idx = 0
+    # sequence of test batches
     batches = [0] * gen_test.n_batches
-    for epoch in range(0, config.n_epochs):
+    for epoch in range(1):
         train_loss = 0
         train_loss_c = 0
         train_loss_r = 0
@@ -201,43 +164,88 @@ with tf.Session(config=config_tf) as sess:
             batch_segments, batch_classes, batch_vis_views = gen_test.next()
 
             # calculate test loss and accuracy
-            [summary, batch_loss, batch_loss_c, batch_loss_r,
-             batch_accuracy, batch_prob, batch_conv_vis, batch_descriptor] = sess.run(
-                [summary_batch, loss, loss_c, loss_r, accuracy, y_prob, conv_vis, descriptor],
+            [batch_conv_vis, batch_descriptor] = sess.run(
+                [conv_vis, descriptor],
                 feed_dict={
                     cnn_input: batch_segments,
                     cnn_input_vis: batch_vis_views,
-                    y_true: batch_classes,
                     scales: preprocessor.last_scales,
                 },
             )
 
-            if config.log_name:
-                test_writer.add_summary(summary, sess.run(global_step))
+            # if config.log_name:
+            #     test_writer.add_summary(summary, sess.run(global_step))
 
-            # if test_step == gen_test.n_batches - 1:
             if True:
-                img_heatmap_np = plot_heatmap_img(batch_segments,
-                                                  batch_vis_views,
-                                                  batch_classes,
-                                                  preprocessor.last_scales,
-                                                  batch_conv_vis,
-                                                  batch_descriptor,
-                                                  sess,
-                                                  descriptor,
-                                                  cnn_input,
-                                                  cnn_input_vis,
-                                                  y_true,
-                                                  scales)
+                img_heatmap_vis_np, val_heatmap_np, scores_vis = plot_heatmap_img(batch_segments,
+                                                                                  batch_vis_views,
+                                                                                  preprocessor.last_scales,
+                                                                                  batch_conv_vis,
+                                                                                  batch_descriptor,
+                                                                                  sess,
+                                                                                  descriptor,
+                                                                                  cnn_input,
+                                                                                  cnn_input_vis,
+                                                                                  scales)
+                for i in range(img_heatmap_vis_np.shape[0]):
+                    if segment_idx < len(duplicate_classes):
+                        cur_id = duplicate_classes[segment_idx]
+                        cur_did = duplicate_ids[segment_idx]
+                        seg_dir = "%06d" % cur_id
+                        seg_filename = "%03d" % cur_did
 
-                summary = sess.run(summary_heatmap, feed_dict={img_heatmap: img_heatmap_np})
-                test_writer.add_summary(summary, sess.run(global_step))
-                test_writer.flush()
+                        if not os.path.exists(os.path.join(config.heatmap_dir, seg_dir)):
+                            os.makedirs(os.path.join(config.heatmap_dir, seg_dir))
 
-            test_loss += batch_loss
-            test_loss_c += batch_loss_c
-            test_loss_r += batch_loss_r
-            test_accuracy += batch_accuracy
+                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg"),
+                                    cv2.cvtColor(img_heatmap_vis_np[i], cv2.COLOR_BGR2RGB))
+                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
+                                    np.uint16(val_heatmap_np[i]*65535))
+
+                        mask = batch_vis_views[i, :, :, 1]
+                        # mask and its vicinity
+                        mask = cv2.dilate(mask, np.ones((7, 7), np.uint8))
+                        val_mask = np.sum(val_heatmap_np[i][mask > 0.5])
+                        val_all = np.sum(val_heatmap_np[i])
+                        if (cur_id, cur_did) in cid_to_bin:
+                            bin_idx = cid_to_bin[(cur_id, cur_did)]
+                            hist_sum[bin_idx] += val_mask / val_all
+                            hist_n[bin_idx] += 1
+
+                        segment_idx += 1
+                    else:
+                        print(segment_idx)
+                        print(len(duplicate_classes))
+                        print(batch_segments.shape)
+                        print(img_heatmap_vis_np.shape)
+
+                # img_heatmap_np, scores = plot_heatmap_vox(batch_segments,
+                #                                   batch_vis_views,
+                #                                   batch_classes,
+                #                                   preprocessor.last_scales,
+                #                                   batch_conv,
+                #                                   batch_descriptor,
+                #                                   sess,
+                #                                   descriptor,
+                #                                   cnn_input,
+                #                                   cnn_input_vis,
+                #                                   y_true,
+                #                                   scales,
+                #                                   480, 640)
+
+                # summary = sess.run(summary_heatmap, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                #                                                img_heatmap: img_heatmap_np,
+                #                                                score: scores,
+                #                                                score_vis: scores_vis})
+                # summary = sess.run(summary_heatmap_vis, feed_dict={img_heatmap_vis: img_heatmap_vis_np,
+                #                                                    score_vis: scores_vis})
+                # test_writer.add_summary(summary, sess.run(global_step))
+                # test_writer.flush()
+
+            # test_loss += batch_loss
+            # test_loss_c += batch_loss_c
+            # test_loss_r += batch_loss_r
+            # test_accuracy += batch_accuracy
             test_step += 1
 
             # print results
@@ -278,4 +286,7 @@ with tf.Session(config=config_tf) as sess:
         #         sess.graph.as_graph_def(), model_folder, "graph.pb"
         #     )
 
-        print()
+        hist_n = np.maximum(hist_n, 1)
+
+        print(hist_sum / hist_n)
+        print(hist_n)

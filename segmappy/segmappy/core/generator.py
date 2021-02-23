@@ -13,7 +13,9 @@ class Generator(object):
         train=True,
         batch_size=16,
         shuffle=False,
-        triplet=0
+        triplet=0,
+        largest=False,
+        min_class=0
     ):
         self.preprocessor = preprocessor
         self.segment_ids = segment_ids
@@ -22,6 +24,8 @@ class Generator(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.triplet = triplet
+        self.largest = largest
+        self.min_class = min_class
 
         self.n_segments = len(self.segment_ids)
 
@@ -33,7 +37,7 @@ class Generator(object):
 
                 self.class_to_segment_id[seg_class].append(seg_id)
                 # if enough views for a triplet loss
-                if len(self.class_to_segment_id[seg_class]) >= self.triplet:
+                if len(self.class_to_segment_id[seg_class]) >= max(self.triplet, self.min_class):
                     self.classes.add(seg_class)
             self.classes = np.array(list(self.classes))
             if self.batch_size % self.triplet != 0:
@@ -45,6 +49,15 @@ class Generator(object):
 
             print('Found %d classes with enough views' % len(self.classes))
             self.n_batches = len(self.classes) // self.batch_classes
+
+            if self.largest:
+                for (c, class_seg_ids) in self.class_to_segment_id.items():
+                    if len(class_seg_ids) >= max(self.triplet, self.min_class):
+                        sizes_ids = [(len(self.preprocessor.segments[id]), id) for id in class_seg_ids]
+                        sizes_ids = sorted(sizes_ids, key=lambda segment: segment[0])
+                        # get last self.triplet segments (largest)
+                        sizes_ids = sizes_ids[-self.triplet:]
+                        self.class_to_segment_id[c] = [segment[1] for segment in sizes_ids]
         else:
             self.n_batches = int(np.ceil(float(self.n_segments) / batch_size))
 
@@ -79,7 +92,6 @@ class Generator(object):
             if self.shuffle and self._i == 0:
                 np.random.shuffle(self.segment_ids)
 
-            # TODO Check if this is correct during last batch
             self.batch_ids = self.segment_ids[self._i : self._i + self.batch_size]
 
             self._i = self._i + self.batch_size

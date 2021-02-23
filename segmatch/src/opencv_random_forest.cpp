@@ -166,12 +166,17 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
   }*/
 
   if (params_.n_nearest_neighbours > 0) {
+    static std::vector<int> first_matches;
+
     for (std::unordered_map<Id, Segment>::const_iterator it_source = source_cloud.begin();
         it_source != source_cloud.end(); ++it_source) {
 
       if (params_.do_not_use_cars) {
         if (it_source->second.empty()) continue;  
         if (it_source->second.getLastView().semantic == 1u) continue;
+      }
+      if (it_source->second.getLastView().features.size() == 0) {
+        continue;
       }
 
       Segment source_segment = it_source->second;
@@ -195,6 +200,10 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
       VectorXf dists2(n_nearest_neighbours);
       nns_->knn(q, indices, dists2, n_nearest_neighbours);
 
+      bool found = false;
+      int n_nn_inv = 0;
+
+      bool first = true;
       for (size_t i = 0u; i < n_nearest_neighbours; ++i) {
         if (indices[i] == 0) {
           // TODO RD Sometimes all the indices are 0. Investigate this. 
@@ -203,14 +212,49 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
         if (source_segment.segment_id != target_segment_ids_[indices[i]]) {
           PairwiseMatch match(source_segment.segment_id,
                               target_segment_ids_[indices[i]],
+                              source_segment.getLastView().timestamp_ns,
+                              target_segment_ts_[indices[i]],
                               source_segment.getLastView().centroid,
                               target_segment_centroids_[indices[i]], 1.0);
           match.features1_ = features_source;
           match.features2_ = target_segment_features_[indices[i]];
 
-          candidates_after_first_stage.push_back(match);
+          if (!found && (source_segment.getLastView().centroid.getVector3fMap() -
+              target_segment_centroids_[indices[i]].getVector3fMap()).norm() < 2.0) {
+            if (std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
+              first_matches.push_back(n_nn_inv);
+              found = true;
+            }
+          }
+          // count only not valid
+          else {
+            ++n_nn_inv;
+          }
+
+          if (first &&
+              std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
+            first = false;
+            if(i < n_nearest_neighbours - 1 &&
+               1.2 * sqrt(dists2[i]) < sqrt(dists2[i + 1])) {
+              candidates_after_first_stage.push_back(match);
+            }
+          }
         }
       }
+      if (!found) {
+        first_matches.push_back(params_.n_nearest_neighbours);
+      }
+
+    }
+    {
+      std::vector<int> first_matches_hist(params_.n_nearest_neighbours + 1, 0);
+      for (auto &val : first_matches) {
+        ++first_matches_hist[val];
+      }
+      for (auto &val : first_matches_hist) {
+        std::cout << val << ", ";
+      }
+      std::cout << std::endl;
     }
 
     if (matches_after_first_stage != NULL) {
@@ -284,19 +328,27 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
   target_segment_ids_.clear();
   target_segment_centroids_.clear();
   target_segment_features_.clear();
+  target_segment_ts_.clear();
 
   // TODO RD Solve the need for cleaning empty segments and clean here.
   unsigned int n_non_empty_views = 0;
   for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
-      it != target_cloud.end(); ++it) {
-      if (!it->second.empty()) {
-          ++n_non_empty_views;
-      }
+      it != target_cloud.end(); ++it)
+  {
+
+    // LOG(INFO) << "it->second.getLastView().features.size() = " << it->second.getLastView().features.size();
+    // LOG(INFO) << "it->second.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().size() = "
+    //           << it->second.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().size();
+    if (!it->second.empty() &&
+        it->second.getLastView().features.size() > 0)
+    {
+        ++n_non_empty_views;
+    }
   }
-  
-  if (n_non_empty_views != target_cloud.getNumberOfValidSegments()) { 
-      LOG(INFO) << "Some segments had empty views";
-  }
+  // LOG(INFO) << "Checked all segments for empty views and features";
+  // if (n_non_empty_views != target_cloud.getNumberOfValidSegments()) {
+  //     LOG(INFO) << "Some segments had empty views";
+  // }
   
   target_matrix_.resize(n_non_empty_views,
                         params_.knn_feature_dim);
@@ -306,7 +358,9 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     unsigned int n_non_car = 0;
     for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
         it != target_cloud.end(); ++it) {
-        if (!it->second.empty()) {
+        if (!it->second.empty()  &&
+            it->second.getLastView().features.size() > 0)
+        {
             if(it->second.getLastView().semantic != 1u) {
                 ++n_non_car;
             } 
@@ -316,12 +370,19 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
                           params_.knn_feature_dim);
   }
 
+  // if no valid segment
+  if (target_matrix_.rows() == 0) {
+    return;
+  }
+
+  // LOG(INFO) << "\n";
   unsigned int i = 0u;
   for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
       it != target_cloud.end(); ++it) {
     Segment target_segment = it->second;
     if (target_segment.empty()) continue;
     if (params_.do_not_use_cars && target_segment.getLastView().semantic == 1u) continue;
+    if (target_segment.getLastView().features.size() == 0) continue;
 
     target_matrix_.block(i, 0, 1, params_.knn_feature_dim) =
         target_segment.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix().block(
@@ -330,6 +391,10 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     target_segment_centroids_.push_back(target_segment.getLastView().centroid);
     target_segment_features_.push_back(
         target_segment.getLastView().features.rotationInvariantFeaturesOnly().asEigenMatrix());
+    target_segment_ts_.push_back(target_segment.getLastView().timestamp_ns);
+
+    // LOG(INFO) << "id = " << target_segment.segment_id;
+
     ++i;
   }
 
@@ -337,8 +402,14 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     normalizeEigenFeatures(&target_matrix_);
   }
 
+  LOG(INFO) << "described target = " << (float)target_matrix_.rows() / target_cloud.size();
+  // LOG(INFO) << "features mean = " << target_matrix_.colwise().mean();
+  // LOG(INFO) << "features stddev = " << ((target_matrix_.array().rowwise() - target_matrix_.array().colwise().mean()).square().colwise().mean()).sqrt();
+
   target_matrix_.transposeInPlace();
   nns_ = NNSearchF::createKDTreeLinearHeap(target_matrix_);
+
+  // LOG(INFO) << "Added all features to target";
 }
 
 void OpenCvRandomForest::normalizeEigenFeatures(Eigen::MatrixXd* f) {

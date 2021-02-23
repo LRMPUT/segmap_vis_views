@@ -3,7 +3,9 @@
 
 #include <vector>
 
-#include <pcl/search/kdtree.h>
+#include <pcl/search/impl/kdtree.hpp>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+// #include <pcl/search/kdtree.h>
 
 #include "segmatch/points_neighbors_providers/points_neighbors_provider.hpp"
 #include "segmatch/common.hpp"

@@ -60,17 +60,20 @@ const Id kUnassignedId = -3; // Used internally by the incremental segmenter.
 // 
 // TODO: switch to std::array of size 2? so that the notation is the same .at(0) instead of first.
 typedef std::pair<Id, Id> IdPair;
+typedef std::pair<int64_t, int64_t> TsPair;
 
 class PairwiseMatch {
  public:
-  PairwiseMatch(Id id1, Id id2, const PclPoint& centroid1, const PclPoint& centroid2,
+  PairwiseMatch(Id id1, Id id2, int64_t ts1, int64_t ts2, const PclPoint& centroid1, const PclPoint& centroid2,
                 float confidence_in) :
                   ids_(id1, id2),
+                  tss_(ts1, ts2),
                   confidence_(confidence_in),
                   centroids_(PointPair(centroid1, centroid2)) {}
 
   PointPair getCentroids() const { return centroids_; }
   IdPair ids_;
+  TsPair tss_;
   float confidence_;
   Eigen::MatrixXd features1_;
   Eigen::MatrixXd features2_;
