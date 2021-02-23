@@ -67,7 +67,7 @@ def plot_heatmap_img(batch_segments,
                           0.75 * np.tile(np.expand_dims(np.minimum(intensity[b] * 255.0 / 1500.0, 255.0), axis=-1),
                                   [1, 1, 3])
 
-        cur_img_heatmap[mask[b] > 128.0, :] = np.array([255, 0, 0], dtype=np.uint8)
+        # cur_img_heatmap[mask[b] > 128.0, :] = np.array([255, 0, 0], dtype=np.uint8)
         img_heatmap_np[b] = cur_img_heatmap
         val_heatmap_np[b] = cur_heatmap
 

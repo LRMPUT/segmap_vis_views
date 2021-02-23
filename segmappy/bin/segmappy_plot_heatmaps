@@ -32,6 +32,17 @@ config.heatmap_dir = args.heatmap_dir
 if not os.path.exists(config.heatmap_dir):
     os.makedirs(config.heatmap_dir)
 
+ranks_data = np.loadtxt("/mnt/data/datasets/JW/MulRan/segmap/training_datasets/DCC03/ranks.log", dtype=np.int)
+nbins = 10
+hist_sum = np.zeros(nbins, dtype=np.float)
+hist_n = np.zeros(nbins, dtype=np.int)
+cid_to_rank = {}
+cid_to_bin = {}
+for i, row in enumerate(ranks_data):
+    cid_to_rank[(row[0], row[1])] = row[2]
+    cid_to_bin[(row[0], row[1])] = float(i) / ranks_data.shape[0] * nbins
+
+
 # load dataset and preprocessor
 dataset = Dataset(
     folder=config.cnn_test_folder,
@@ -133,7 +144,7 @@ with tf.Session(config=config_tf) as sess:
     segment_idx = 0
     # sequence of test batches
     batches = [0] * gen_test.n_batches
-    for epoch in range(0, config.n_epochs):
+    for epoch in range(1):
         train_loss = 0
         train_loss_c = 0
         train_loss_r = 0
@@ -177,20 +188,36 @@ with tf.Session(config=config_tf) as sess:
                                                                                   cnn_input_vis,
                                                                                   scales)
                 for i in range(img_heatmap_vis_np.shape[0]):
-                    cur_id = duplicate_classes[segment_idx]
-                    cur_did = duplicate_ids[segment_idx]
-                    seg_dir = "%06d" % cur_id
-                    seg_filename = "%03d" % cur_did
+                    if segment_idx < len(duplicate_classes):
+                        cur_id = duplicate_classes[segment_idx]
+                        cur_did = duplicate_ids[segment_idx]
+                        seg_dir = "%06d" % cur_id
+                        seg_filename = "%03d" % cur_did
 
-                    if not os.path.exists(os.path.join(config.heatmap_dir, seg_dir)):
-                        os.makedirs(os.path.join(config.heatmap_dir, seg_dir))
+                        if not os.path.exists(os.path.join(config.heatmap_dir, seg_dir)):
+                            os.makedirs(os.path.join(config.heatmap_dir, seg_dir))
 
-                    cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg"),
-                                cv2.cvtColor(img_heatmap_vis_np[i], cv2.COLOR_BGR2RGB))
-                    cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
-                                np.uint16(val_heatmap_np[i]*65535))
+                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg"),
+                                    cv2.cvtColor(img_heatmap_vis_np[i], cv2.COLOR_BGR2RGB))
+                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
+                                    np.uint16(val_heatmap_np[i]*65535))
 
-                    segment_idx += 1
+                        mask = batch_vis_views[i, :, :, 1]
+                        # mask and its vicinity
+                        mask = cv2.dilate(mask, np.ones((7, 7), np.uint8))
+                        val_mask = np.sum(val_heatmap_np[i][mask > 0.5])
+                        val_all = np.sum(val_heatmap_np[i])
+                        if (cur_id, cur_did) in cid_to_bin:
+                            bin_idx = cid_to_bin[(cur_id, cur_did)]
+                            hist_sum[bin_idx] += val_mask / val_all
+                            hist_n[bin_idx] += 1
+
+                        segment_idx += 1
+                    else:
+                        print(segment_idx)
+                        print(len(duplicate_classes))
+                        print(batch_segments.shape)
+                        print(img_heatmap_vis_np.shape)
 
                 # img_heatmap_np, scores = plot_heatmap_vox(batch_segments,
                 #                                   batch_vis_views,
@@ -259,4 +286,7 @@ with tf.Session(config=config_tf) as sess:
         #         sess.graph.as_graph_def(), model_folder, "graph.pb"
         #     )
 
-        print()
+        hist_n = np.maximum(hist_n, 1)
+
+        print(hist_sum / hist_n)
+        print(hist_n)
