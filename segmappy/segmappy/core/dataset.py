@@ -75,6 +75,8 @@ class Dataset(object):
         self.positions = np.array(self.positions)
         self.features = np.array(self.features)
         self.duplicate_ids = np.array(duplicate_sids)
+        self.orig_ids = self.classes.copy()
+        self.orig_dids = self.duplicate_ids.copy()
 
         # load labels
         from ..tools.import_export import load_labels
@@ -398,6 +400,8 @@ class Dataset(object):
 
         self.duplicate_ids = self.duplicate_ids[ordered_ids]
         self.duplicate_classes = self.duplicate_classes[ordered_ids]
+        self.orig_ids = self.orig_ids[ordered_ids]
+        self.orig_dids = self.orig_dids[ordered_ids]
 
     # keep only segments and corresponding data where the keep parameter is true
     def _trim_data(self, keep):
@@ -419,6 +423,8 @@ class Dataset(object):
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]
+        self.orig_ids = self.orig_ids[keep]
+        self.orig_dids = self.orig_dids[keep]
 
     def _trim_data_no_vis(self, keep):
         self.segments = [segment for (k, segment) in zip(keep, self.segments) if k]
@@ -431,6 +437,8 @@ class Dataset(object):
 
         self.duplicate_ids = self.duplicate_ids[keep]
         self.duplicate_classes = self.duplicate_classes[keep]
+        self.orig_ids = self.orig_ids[keep]
+        self.orig_dids = self.orig_dids[keep]
 
     def _calc_stats(self):
         int_mean = 0.0

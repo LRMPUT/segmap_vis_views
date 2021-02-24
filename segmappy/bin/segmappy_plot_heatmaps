@@ -35,12 +35,13 @@ if not os.path.exists(config.heatmap_dir):
 ranks_data = np.loadtxt("/mnt/data/datasets/JW/MulRan/segmap/training_datasets/DCC03/ranks.log", dtype=np.int)
 nbins = 10
 hist_sum = np.zeros(nbins, dtype=np.float)
+hist_sum_sa = np.zeros(nbins, dtype=np.float)
 hist_n = np.zeros(nbins, dtype=np.int)
 cid_to_rank = {}
 cid_to_bin = {}
 for i, row in enumerate(ranks_data):
     cid_to_rank[(row[0], row[1])] = row[2]
-    cid_to_bin[(row[0], row[1])] = float(i) / ranks_data.shape[0] * nbins
+    cid_to_bin[(row[0], row[1])] = int(float(i) / ranks_data.shape[0] * nbins)
 
 
 # load dataset and preprocessor
@@ -177,17 +178,19 @@ with tf.Session(config=config_tf) as sess:
             #     test_writer.add_summary(summary, sess.run(global_step))
 
             if True:
-                img_heatmap_vis_np, val_heatmap_np, scores_vis = plot_heatmap_img(batch_segments,
-                                                                                  batch_vis_views,
-                                                                                  preprocessor.last_scales,
-                                                                                  batch_conv_vis,
-                                                                                  batch_descriptor,
-                                                                                  sess,
-                                                                                  descriptor,
-                                                                                  cnn_input,
-                                                                                  cnn_input_vis,
-                                                                                  scales)
-                for i in range(img_heatmap_vis_np.shape[0]):
+                # img_heatmap_vis_np, val_heatmap_np, scores_vis = plot_heatmap_img(batch_segments,
+                #                                                                   batch_vis_views,
+                #                                                                   preprocessor.last_scales,
+                #                                                                   batch_conv_vis,
+                #                                                                   batch_descriptor,
+                #                                                                   sess,
+                #                                                                   descriptor,
+                #                                                                   cnn_input,
+                #                                                                   cnn_input_vis,
+                #                                                                   scales)
+                img_heatmap_vis_np = np.zeros(batch_vis_views.shape, dtype=np.uint8)
+                val_heatmap_np = np.zeros(batch_vis_views.shape[:-1], dtype=np.float)
+                for i in range(batch_segments.shape[0]):
                     if segment_idx < len(duplicate_classes):
                         cur_id = duplicate_classes[segment_idx]
                         cur_did = duplicate_ids[segment_idx]
@@ -197,19 +200,28 @@ with tf.Session(config=config_tf) as sess:
                         if not os.path.exists(os.path.join(config.heatmap_dir, seg_dir)):
                             os.makedirs(os.path.join(config.heatmap_dir, seg_dir))
 
-                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg"),
-                                    cv2.cvtColor(img_heatmap_vis_np[i], cv2.COLOR_BGR2RGB))
-                        cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
-                                    np.uint16(val_heatmap_np[i]*65535))
+                        # cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg"),
+                        #             cv2.cvtColor(img_heatmap_vis_np[i], cv2.COLOR_BGR2RGB))
+                        # cv2.imwrite(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
+                        #             (val_heatmap_np[i]*65535).astype(np.uint16))
+
+                        img_heatmap_vis_np[i] = cv2.cvtColor(
+                                cv2.imread(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_img.jpg")),
+                                                             cv2.COLOR_BGR2RGB)
+                        val_heatmap_np[i] = cv2.imread(os.path.join(config.heatmap_dir, seg_dir, seg_filename + "_heat_val.png"),
+                                                                cv2.IMREAD_ANYDEPTH).astype(np.float) / 65535.0
 
                         mask = batch_vis_views[i, :, :, 1]
                         # mask and its vicinity
                         mask = cv2.dilate(mask, np.ones((7, 7), np.uint8))
+                        mask_area = np.sum(mask > 0.5)
                         val_mask = np.sum(val_heatmap_np[i][mask > 0.5])
                         val_all = np.sum(val_heatmap_np[i])
                         if (cur_id, cur_did) in cid_to_bin:
                             bin_idx = cid_to_bin[(cur_id, cur_did)]
                             hist_sum[bin_idx] += val_mask / val_all
+                            hist_sum_sa[bin_idx] += (val_mask / mask_area) / \
+                                                 (val_all / (mask.shape[0]*mask.shape[1] - mask_area))
                             hist_n[bin_idx] += 1
 
                         segment_idx += 1
@@ -289,4 +301,5 @@ with tf.Session(config=config_tf) as sess:
         hist_n = np.maximum(hist_n, 1)
 
         print(hist_sum / hist_n)
+        print(hist_sum_sa / hist_n)
         print(hist_n)
