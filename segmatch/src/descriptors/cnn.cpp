@@ -256,9 +256,13 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
       for (int r = 0; r < n_vis_h_dim_; ++r) {
         for (int c = 0; c < n_vis_w_dim_; ++c) {
           // MulRan
-          nn_input_vis.container[r][c][0] = (intensity(r, c) - 209.30) / 173.09;
+          // nn_input_vis.container[r][c][0] = (intensity(r, c) - 209.30) / 173.09;
+          // nn_input_vis.container[r][c][1] = mask(r, c);
+          // nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) * 500.0 / (7632.0);
+          // KITTI
+          nn_input_vis.container[r][c][0] = (intensity(r, c) - 19020.73) / 8297.86;
           nn_input_vis.container[r][c][1] = mask(r, c);
-          nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) * 500.0 / (7632.0);
+          nn_input_vis.container[r][c][2] = (range(r, c) - meanMaskRange) * 500.0 / (6337.61);
         }
       }
 
@@ -283,9 +287,9 @@ void CNNDescriptor::describe(SegmentedCloud* segmented_cloud_ptr) {
       //   for (int r = 0; r < intensity.rows(); ++r) {
       //     for (int c = 0; c < intensity.cols(); ++c) {
       //       // KITTI
-      //       // intensityMat.at<uint16_t>(r, c) = intensity(r, c)*65535.0f;
+      //       intensityMat.at<uint16_t>(r, c) = intensity(r, c)*65535.0f;
       //       // MulRan
-      //       intensityMat.at<uint16_t>(r, c) = intensity(r, c);
+      //       // intensityMat.at<uint16_t>(r, c) = intensity(r, c);
       //       // intensityMono.at<uint8_t>(r, c) = std::min((int)(intensity(r, c)*255.0/1500.0), 255);
       //       // up to 65.535 * 2 m
       //       rangeMat.at<uint16_t>(r, c) = std::min(range(r, c) * 500.0f, 65535.0f);

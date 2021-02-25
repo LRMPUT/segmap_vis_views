@@ -22,9 +22,9 @@ def plot_heatmap_img(batch_segments,
                      ):
 
     # MulRan
-    intensity = batch_vis_views[:, :, :, 0] * 173.09 + 209.30
+    # intensity = batch_vis_views[:, :, :, 0] * 173.09 + 209.30
     # KITTI
-    # intensity = (batch_vis_views[:, :, :, 0] * 8297.86 + 19020.73) * 1500.0 / 65535.0
+    intensity = (batch_vis_views[:, :, :, 0] * 8297.86 + 19020.73) * 1500.0 / 65535.0
     mask = batch_vis_views[:, :, :, 1] * 255.0
     weights = np.zeros((batch_conv_vis.shape[0], batch_conv_vis.shape[3]), dtype=np.float)
     for layer in range(batch_conv_vis.shape[3]):
