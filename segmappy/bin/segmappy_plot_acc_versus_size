@@ -296,10 +296,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.lines as mlines
 
-fig_width_pt = 252
-inches_per_pt = 1.0 / 72.27  # Convert pt to inch
+fig_width_pt = 1782
+inches_per_pt = 1.0 / 300  # Convert pt to inch
 fig_width = fig_width_pt * inches_per_pt
-fig_height = fig_width * 0.9
+fig_height = fig_width * 0.7
 fig_size = [fig_width, fig_height]
 
 plt.figure(figsize=(fig_width, fig_height))
