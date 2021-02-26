@@ -30,6 +30,7 @@ SegMapper: {
     map_publication_rate_hz: 3,
     
     add_vis_views: true,
+#    add_vis_views: false,
     loam_transform: false,
   },
  

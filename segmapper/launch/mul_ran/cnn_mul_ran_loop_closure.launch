@@ -6,9 +6,8 @@
   <arg name="root_dir" default="/mnt/data/datasets/JW/MulRan" />
 
   <!-- Bag file path -->
-<!--  <arg name="bag_file" value="$(arg root_dir)/DCC03/DCC03.bag" />-->
-  <arg name="bag_file" value="$(arg root_dir)/KAIST02/KAIST02.bag"/>
-<!--  <arg name="bag_file" value="$(arg root_dir)/Riverside01/Riverside01.bag"/>-->
+  <arg name="bag_file" value="$(arg root_dir)/DCC03/DCC03.bag" />
+<!--  <arg name="bag_file" value="$(arg root_dir)/KAIST02/KAIST02.bag"/>-->
   <rosparam param="LaserMapper/bag_file" subst_value="True">$(arg bag_file)</rosparam>
 
   <!-- Rviz visualization config file path -->

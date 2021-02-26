@@ -299,24 +299,24 @@ import matplotlib.lines as mlines
 fig_width_pt = 1782
 inches_per_pt = 1.0 / 300  # Convert pt to inch
 fig_width = fig_width_pt * inches_per_pt
-fig_height = fig_width * 0.7
+fig_height = fig_width * 0.4
 fig_size = [fig_width, fig_height]
 
 plt.figure(figsize=(fig_width, fig_height))
 
-fontsize = 10
+fontsize = 12
 params = {
     "backend": "ps",
     "axes.labelsize": fontsize,
     "font.size": fontsize,
-    "legend.fontsize": 6,
+    "legend.fontsize": 8,
     "xtick.labelsize": fontsize,
     "ytick.labelsize": fontsize,
     "text.usetex": True,
     "font.family": "sans-serif",
     "font.sans-serif": "Arial",
     "figure.figsize": fig_size,
-    "axes.linewidth": 0.5,
+    "axes.linewidth": 0.4,
 }
 plt.rcParams.update(params)
 
@@ -346,13 +346,15 @@ plt.yscale("log")
 
 ax = plt.gca()
 ax.set_xlim([0, xlim + 1])
-ax.set_ylim([1, 6000])
+ax.set_ylim([1, 7000])
 ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
 
 bin_edges = bin_edges * 100
 ax.set_xticklabels(bin_edges.astype(int))
 ax.set_xticks(xticks)
-ax.tick_params(axis="both", direction="in")
+ax.tick_params(axis="x", direction="in")
+ax.tick_params(axis="y", direction="in")
+ax.tick_params(axis="y", which="minor", direction="in")
 
 lG = mlines.Line2D([], [], color=(0.9290, 0.6940, 0.1250), label="eigen", linewidth=lw)
 lR = mlines.Line2D([], [], color=(0, 0.4470, 0.7410), label="w/o vis views", linewidth=lw)
@@ -366,7 +368,7 @@ else:
 plt.legend(handles=handles, loc=3)
 
 plt.xlabel("segment completness [\%]")
-plt.ylabel("\\#neighbors needed [-]")
+plt.ylabel("\\#neighbors needed log [-]")
 plt.tight_layout()
 
 plt.savefig("acc_versus_size.pdf")
