@@ -83,7 +83,7 @@ SegMapper: {
       #      descriptor_types: ["CNN", "EigenvalueBased"],
       descriptor_types: ["CNN"],
       use_vis_views: true,
-      #      use_vis_views: false,
+#            use_vis_views: false,
     },
 
     Classifier: {

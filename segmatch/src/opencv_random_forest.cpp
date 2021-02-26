@@ -200,12 +200,15 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
       VectorXf dists2(n_nearest_neighbours);
       nns_->knn(q, indices, dists2, n_nearest_neighbours);
 
-      bool found = false;
-      int n_nn_inv = 0;
+      // bool found = false;
+      // int n_nn_inv = 0;
 
+      // LOG(INFO) << "Searching for nearest";
+      // LOG(INFO) << "indices = " << indices;
+      // LOG(INFO) << "dists2 = " << dists2;
       bool first = true;
       for (size_t i = 0u; i < n_nearest_neighbours; ++i) {
-        if (indices[i] == 0) {
+        if (indices[i] == 0 || indices[i] == -1) {
           // TODO RD Sometimes all the indices are 0. Investigate this. 
           break;
         }
@@ -219,43 +222,45 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
           match.features1_ = features_source;
           match.features2_ = target_segment_features_[indices[i]];
 
-          if (!found && (source_segment.getLastView().centroid.getVector3fMap() -
-              target_segment_centroids_[indices[i]].getVector3fMap()).norm() < 2.0) {
-            if (std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
-              first_matches.push_back(n_nn_inv);
-              found = true;
-            }
-          }
-          // count only not valid
-          else {
-            ++n_nn_inv;
-          }
+          // if (!found && (source_segment.getLastView().centroid.getVector3fMap() -
+          //     target_segment_centroids_[indices[i]].getVector3fMap()).norm() < 2.0) {
+          //   if (std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
+          //     first_matches.push_back(n_nn_inv);
+          //     found = true;
+          //   }
+          // }
+          // // count only not valid
+          // else {
+          //   ++n_nn_inv;
+          // }
 
-          if (first &&
-              std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
-            first = false;
-            if(i < n_nearest_neighbours - 1 &&
-               1.2 * sqrt(dists2[i]) < sqrt(dists2[i + 1])) {
-              candidates_after_first_stage.push_back(match);
-            }
-          }
+          // if (first &&
+          //     std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
+          //   first = false;
+          //   if(i < n_nearest_neighbours - 1 &&
+          //      1.2 * sqrt(dists2[i]) < sqrt(dists2[i + 1])) {
+          //     candidates_after_first_stage.push_back(match);
+          //   }
+          // }
+
+          candidates_after_first_stage.push_back(match);
         }
       }
-      if (!found) {
-        first_matches.push_back(params_.n_nearest_neighbours);
-      }
-
+      // if (!found) {
+      //   first_matches.push_back(params_.n_nearest_neighbours);
+      // }
+      // LOG(INFO) << "Found nearest";
     }
-    {
-      std::vector<int> first_matches_hist(params_.n_nearest_neighbours + 1, 0);
-      for (auto &val : first_matches) {
-        ++first_matches_hist[val];
-      }
-      for (auto &val : first_matches_hist) {
-        std::cout << val << ", ";
-      }
-      std::cout << std::endl;
-    }
+    // {
+    //   std::vector<int> first_matches_hist(params_.n_nearest_neighbours + 1, 0);
+    //   for (auto &val : first_matches) {
+    //     ++first_matches_hist[val];
+    //   }
+    //   for (auto &val : first_matches_hist) {
+    //     std::cout << val << ", ";
+    //   }
+    //   std::cout << std::endl;
+    // }
 
     if (matches_after_first_stage != NULL) {
       *matches_after_first_stage = candidates_after_first_stage;
@@ -375,7 +380,7 @@ void OpenCvRandomForest::setTarget(const SegmentedCloud& target_cloud) {
     return;
   }
 
-  // LOG(INFO) << "\n";
+  // LOG(INFO) << "Adding to target database";
   unsigned int i = 0u;
   for (std::unordered_map<Id, Segment>::const_iterator it = target_cloud.begin();
       it != target_cloud.end(); ++it) {
