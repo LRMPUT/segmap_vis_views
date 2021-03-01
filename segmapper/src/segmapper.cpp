@@ -332,7 +332,7 @@ void SegMapper::segMatchThread() {
         BENCHMARK_STOP("SM.ProcessLoopClosure.GettingLastPoseOfTrajectories");
 
         BENCHMARK_START("SM.ProcessLoopClosure.UpdateIncrementalEstimator");
-        // incremental_estimator_->processLoopClosure(loop_closure);
+        incremental_estimator_->processLoopClosure(loop_closure);
         BENCHMARK_STOP("SM.ProcessLoopClosure.UpdateIncrementalEstimator");
 
         BENCHMARK_START("SM.ProcessLoopClosure.ProcessLocalMap");
