@@ -372,9 +372,9 @@ ax.tick_params(axis="x", direction="in")
 ax.tick_params(axis="y", direction="in")
 ax.tick_params(axis="y", which="minor", direction="in")
 
-lG = mlines.Line2D([], [], color=(0.9290, 0.6940, 0.1250), label="eigen", linewidth=lw)
-lR = mlines.Line2D([], [], color=(0, 0.4470, 0.7410), label="w/o vis views", linewidth=lw)
-lB = mlines.Line2D([], [], color=(0.8500, 0.3250, 0.0980), label="with vis views", linewidth=lw)
+lG = mlines.Line2D([], [], color=(0.9290, 0.6940, 0.1250), label="eigen (SegMatch)", linewidth=lw)
+lR = mlines.Line2D([], [], color=(0, 0.4470, 0.7410), label="w/o vis views (SegMap)", linewidth=lw)
+lB = mlines.Line2D([], [], color=(0.8500, 0.3250, 0.0980), label="with vis views (our)", linewidth=lw)
 if config.ae_model:
     lO = mlines.Line2D([], [], color="orange", label="AE", linewidth=lw)
     handles = [lG, lO, lR, lB]

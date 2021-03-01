@@ -231,15 +231,15 @@ PairwiseMatches OpenCvRandomForest::findCandidates(
           //   ++n_nn_inv;
           // }
 
-          // if (first &&
-          //     std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
-          //   first = false;
-          //   if(i < n_nearest_neighbours - 1 &&
-          //      1.2 * sqrt(dists2[i]) < sqrt(dists2[i + 1])) {
-          //     candidates_after_first_stage.push_back(match);
-          //   }
-          // }
-          candidates_after_first_stage.push_back(match);
+          if (first &&
+              std::abs(source_segment.getLastView().timestamp_ns - target_segment_ts_[indices[i]]) > 60000000000ll) {
+            first = false;
+            if(i < n_nearest_neighbours - 1 &&
+               1.2 * sqrt(dists2[i]) < sqrt(dists2[i + 1])) {
+              candidates_after_first_stage.push_back(match);
+            }
+          }
+          // candidates_after_first_stage.push_back(match);
         }
       }
       // if (!found) {
